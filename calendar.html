@@ -5,7 +5,7 @@
 <title>Frontier JQuery Calendar</title>
 
 <!-- Include CSS for JQuery Frontier Calendar plugin (Required for calendar plugin) -->
-<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.1.css" />
+<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.2.css" />
 
 <!-- Include CSS for color picker plugin (Not required for calendar plugin. Used for example.) -->
 <link rel="stylesheet" type="text/css" href="css/colorpicker/colorpicker.css" />
@@ -13,8 +13,11 @@
 <!-- Include CSS for JQuery UI (Required for calendar plugin.) -->
 <link rel="stylesheet" type="text/css" href="css/jquery-ui/smoothness/jquery-ui-1.8.1.custom.css" />
 
-<!-- Include JQuery Core (Required for calendar plugin) -->
-<script type="text/javascript" src="js/jquery-core/jquery-1.4.2.min.js"></script>
+<!--
+Include JQuery Core (Required for calendar plugin)
+** This is our IE fix version which enables drag-and-drop to work correctly in IE. See README file in js/jquery-core folder. **
+-->
+<script type="text/javascript" src="js/jquery-core/jquery-1.4.2-ie-fix.min.js"></script>
 
 <!-- Include JQuery UI (Required for calendar plugin.) -->
 <script type="text/javascript" src="js/jquery-ui/smoothness/jquery-ui-1.8.1.custom.min.js"></script>
@@ -30,7 +33,7 @@
 <script type="text/javascript" src="js/lib/jshashtable-2.1.js"></script>
 
 <!-- Include JQuery Frontier Calendar plugin -->
-<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.1.min.js"></script>
+<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.2.min.js"></script>
 
 </head>
 <body style="background-color: #aaaaaa;">
@@ -45,6 +48,15 @@ to 1em or set it to px.
 http://osdir.com/ml/jquery-ui/2009-04/msg00071.html
 */
 body { font-size: 62.5%; }
+.shadow {
+	-moz-box-shadow: 3px 3px 4px #aaaaaa;
+	-webkit-box-shadow: 3px 3px 4px #aaaaaa;
+	box-shadow: 3px 3px 4px #aaaaaa;
+	/* For IE 8 */
+	-ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#aaaaaa')";
+	/* For IE 5.5 - 7 */
+	filter: progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#aaaaaa');
+}
 </style>
 
 <script type="text/javascript">
@@ -61,7 +73,9 @@ $(document).ready(function(){
 	var jfcalplugin = $("#mycal").jFrontierCal({
 		date: new Date(),
 		dayClickCallback: myDayClickHandler,
-		agendaClickCallback: myAgendaClickHandler
+		agendaClickCallback: myAgendaClickHandler,
+		agendaDropCallback: myAgendaDropHandler,
+		dragAndDropEnabled: true
 	}).data("plugin");
 
 	// make the day cells roughly 3/4th as tall as they are wide. this makes our calendar wider than it is tall. 
@@ -94,6 +108,21 @@ $(document).ready(function(){
 		
 		$("#display-event-form").dialog('open');
 	
+	}
+	/*
+	called when user drops an agenda item into a day cell.
+	*/
+	function myAgendaDropHandler(eventObj){
+	
+		// Get ID of the agenda item from the event object
+		var agendaId = eventObj.data.agendaId;
+
+		// Pull agenda item from calendar
+		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
+	
+		alert("Drop event triggered for agenda item " + agendaItem.title + 
+			". Here is where you can make an AJAX call to update your database.");
+		
 	}
 	/*
 	initialize jquery ui datepicker. set date format to yyyy-mm-dd for easy parsing
@@ -163,6 +192,15 @@ $(document).ready(function(){
 		$("#dateSelect").datepicker("setDate",cyear+"-"+(cmonth+1)+"-"+cday);		
 		return false;
 	});
+	
+	/*
+	Initialize delete all agenda items button
+	*/
+	$("#BtnDeleteAll").button();
+	$("#BtnDeleteAll").click(function() {	
+		jfcalplugin.deleteAllAgendaItems("#mycal");	
+		return false;
+	});		
 	
 	/*
 	initialize iCal test button
@@ -256,6 +294,7 @@ $(document).ready(function(){
 						what,
 						startDateObj,
 						endDateObj,
+						false,
 						{
 							fname: "Santa",
 							lname: "Claus",
@@ -317,6 +356,7 @@ $(document).ready(function(){
 					$("#colorBackground").val("#" + hex);
 				}
 			});
+			//$("#colorBackground").val("#1040b0");		
 			$("#colorSelectorForeground").ColorPicker({
 				color: "#ffffff",
 				onShow: function (colpkr) {
@@ -332,7 +372,8 @@ $(document).ready(function(){
 					$("#colorSelectorForeground div").css("backgroundColor", "#" + hex);
 					$("#colorForeground").val("#" + hex);
 				}
-			});				
+			});
+			//$("#colorForeground").val("#ffffff");				
 			// put focus on first form input element
 			$("#what").focus();
 		},
@@ -349,6 +390,8 @@ $(document).ready(function(){
 			$("#endMin option:eq(0)").attr("selected", "selected");
 			$("#endMeridiem option:eq(0)").attr("selected", "selected");			
 			$("#what").val("");
+			//$("#colorBackground").val("#1040b0");
+			//$("#colorForeground").val("#ffffff");
 		}
 	});
 	
@@ -382,13 +425,22 @@ $(document).ready(function(){
 				var title = clickAgendaItem.title;
 				var startDate = clickAgendaItem.startDate;
 				var endDate = clickAgendaItem.endDate;
+				var allDay = clickAgendaItem.allDay;
 				var data = clickAgendaItem.data;
-				// in our example add agenda modal form we put some fake data in the agenda data. we can retrieve it here.			
+				// in our example add agenda modal form we put some fake data in the agenda data. we can retrieve it here.
 				$("#display-event-form").append(
-					"<br><b>" + title+ "</b><br><br>" +
-					"<b>Starts:</b> " + startDate + "<br>" +
-					"<b>Ends:</b> " + endDate + "<br><br>"				
-				);
+					"<br><b>" + title+ "</b><br><br>"		
+				);				
+				if(allDay){
+					$("#display-event-form").append(
+						"(All day event)<br><br>"				
+					);				
+				}else{
+					$("#display-event-form").append(
+						"<b>Starts:</b> " + startDate + "<br>" +
+						"<b>Ends:</b> " + endDate + "<br><br>"				
+					);				
+				}
 				for (var propertyName in data) {
 					$("#display-event-form").append("<b>" + propertyName + ":</b> " + data[propertyName] + "<br>");
 				}			
@@ -433,17 +485,17 @@ $(document).ready(function(){
 		
 		<b>Screenshot 1</b>
 		<p>
-		<img src="documentationImages/FrontierCalendar02.png" style="border: 0px solid;">
-		</p>
+		<img src="documentationImages/FrontierCalendar06.png" style="border: 0px solid; width:800px;">
+		</p>		
 
 		<b>Screenshot 2</b>
 		<p>
-		<img src="documentationImages/FrontierCalendar03.png" style="border: 0px solid;">
+		<img src="documentationImages/FrontierCalendar03.png" style="border: 0px solid; width:800px;">
 		</p>
 
 		<b>Screenshot 3: Change background image via CSS file.</b>
 		<p>
-		<img src="documentationImages/FrontierCalendar04.png" style="border: 0px solid;">
+		<img src="documentationImages/FrontierCalendar04.png" style="border: 0px solid; width:800px;">
 		</p>
 		
 	</div>	
@@ -453,21 +505,26 @@ $(document).ready(function(){
 		
 		<br>
 		
-		<p><b>Click the calendar to add some agenda items.</b></p>
+		<div class="shadow" style="border: 1px solid #aaaaaa; padding: 3px;">
+			<b>
+			Click the calendar to add some agenda items.
+			<br><br>
+			Please note that Chrome prevents AJAX calls from reading local files on disk so the iCal example will not work. Try in Firefox, Safari, Opera, or IE.
+			For Chrome it should work when the iCal file is hosted online from your domain.
+			</b>
+		</div>
 		
-		<p><b>
-		Please note that Chrome prevents AJAX calls from reading local files on disk so the iCal example will not work. Try in Firefox, Safari, Opera, or IE.
-		For Chrome it should work when the iCal file is hosted online from your domain.
-		</b></p>
+		<br><br>
 
-		<div id="toolbar" class="ui-widget-header ui-corner-all" style="padding:3px; vertical-align: middle; white-space:nowrap;">
+		<div id="toolbar" class="ui-widget-header ui-corner-all" style="padding:3px; vertical-align: middle; white-space:nowrap; overflow: hidden;">
 			<button id="BtnPreviousMonth">Previous Month</button>
 			<button id="BtnNextMonth">Next Month</button>
 			&nbsp;&nbsp;&nbsp;
 			Date: <input type="text" id="dateSelect" size="20"/>
 			&nbsp;&nbsp;&nbsp;
+			<button id="BtnDeleteAll">Delete All</button>
 			<button id="BtnICalTest">iCal Test</button>
-			<input type="text" id="iCalSource" size="40" value="extra/fifa-world-cup-2010.ics"/>
+			<input type="text" id="iCalSource" size="30" value="extra/fifa-world-cup-2010.ics"/>
 		</div>
 
 		<br>
@@ -671,7 +728,7 @@ Begin Documentation
 
 -->
 
-<style type="text/css" media="screen">
+<style type="text/css">
 a {
   font: 11px/14px georgia, times, verdana, arial, helvetica, sans-serif;
   text-decoration:none;
@@ -745,6 +802,8 @@ table.apiTable td {
 <li><a href="#Install">Installation Instructions</a></li>
 <li><a href="#Initialization">Initialize Calendar</a></li>
 <li><a href="#Sizing">Calendar Sizing</a></li>
+<li><a href="#DragAndDrop">Drag And Drop</a></li>
+<li><a href="#GetCurrentMonthYear">Get Current Month/Year</a></li>
 <li><a href="#RetrieveAgendaItem">Retrieve Agenda Items</a></li>
 <li><a href="#AddAgendaItem">Add Agenda Items</a></li>
 <li><a href="#DeleteAgendaItem">Delete Agenda Items</a></li>
@@ -768,14 +827,17 @@ Seth Lenzi<br>
 <a name="Requirements"></a>
 <h2>Requirements</h2>
 
+<p><b>**Important**</b> Please read below regarding modified jQuery Core library for drag-and-drop in IE.</p>
+
 <p>
 <b>JQuery Core</b><br>
+js/jquery-core/jquery-1.4.2-ie-fix.min.js if you want drag-and-drop to work correctly in IE. Otherwise use regular jQuery Core library.<br>
+Read <b>README-IE-FIX.TXT</b> file in jquery-frontier-cal-x.x/js/jquery-core/ folder if you are interested in what was modified.<br>
 <a href="http://jquery.com/">http://jquery.com/</a><br>
 </p>
 
 <p>
 <b>JQuery UI</b><br>
-Tested with 1.4.2<br>
 <a href="http://jqueryui.com">http://jqueryui.com</a><br>
 </p>
 
@@ -791,27 +853,30 @@ Tested with 1.4.2<br>
 <h2>Installation Instructions</h2>
 
 <p>
-<b>Step 1:</b> If you don't already have the <b>jQuery Core</b> library you should download it from <a href="http://jquery.com/">jQuery's web site</a>. This is simply a javascript file
-that you add to your HTML document root. A good location is in a folder named "js" or "javascript". <b>Note:</b> jQuery core is already included with this example in the js/ folder.
-<xmp>
+<b>Step 1:</b> Install modified jQuery Core. This plugin should have come with a slightly modified version of the jQuery Core library in the js/jquery-core/ folder. The file name
+is <b>jquery-1.4.2-ie-fix.js</b> for the uncompressed version and <b>jquery-1.4.2-ie-fix.min.js</b> for the compressed version. A slight modification was need to get
+drag-and-drop to work correctly in Internet Explorer. If you don't care about IE than you can use an unmodified copy of jQuery Core library. If you are interested in
+what was modified in the core library read the <b>README-IE-FIX.TXT</b> file in jquery-frontier-cal-x.x/js/jquery-core/ folder. When a new version of jQuery Core is released
+you can make the same small modification. Only one line!
+<pre>
 WebContent/
   |__js/
   |   |__jquery-core/  
-  |         |__jquery-1.4.2.min.js
+  |         |__jquery-1.4.2-ie-fix.min.js
   |
   |__index.html
-</xmp>
+</pre>
 </p>
 
 <p>
 <b>Step 2:</b> If you don't already have the <b>jQuery UI</b> library you should download it from <a href="http://jqueryui.com">jQuery's UI web site</a>. This consists of a javascript file
 and a CSS file. Add both files to your HTML document root. Javascript files should go in a folder named "js" or "javascript" and CSS files should go in a folder names "css".
 <b>Note:</b> jQuery UI with the smoothness theme is already included with this example in the css/ folder.
-<xmp>
+<pre>
 WebContent/
   |__js/
   |   |__jquery-core/  
-  |   |     |__jquery-1.4.2.min.js
+  |   |     |__jquery-1.4.2-ie-fix.min.js
   |   |
   |   |__jquery-ui/
   |         |__smoothness/
@@ -821,23 +886,23 @@ WebContent/
   |         |__smoothness/
   |               |__jquery-ui-1.8.1.custom.css
   |__index.html
-</xmp>
+</pre>
 </p>
 
 <p>
 <b>Step 3:</b> Add the <b>Frontier Calendar Javascript</b> file and <b>Frontier Calendar CSS</b> file to your HTML document root.
-<xmp>
+<pre>
 WebContent/
   |__js/
   |   |__jquery-core/  
-  |   |     |__jquery-1.4.2.min.js
+  |   |     |__jquery-1.4.2-ie-fix.min.js
   |   |
   |   |__jquery-ui/
   |   |     |__smoothness/
   |   |           |__jquery-ui-1.8.1.custom.min.js
   |   |
   |   |__frontierCalendar/  
-  |         |__jquery-frontier-cal-1.1.min.js
+  |         |__jquery-frontier-cal-1.2.min.js
   |
   |__css/
   |   |__jquery-ui/
@@ -845,28 +910,28 @@ WebContent/
   |   |           |__jquery-ui-1.8.1.custom.css
   |   |
   |   |__frontierCalendar/  
-  |         |__jquery-frontier-cal-1.1.css
+  |         |__jquery-frontier-cal-1.2.css
   |
   |__index.html
-</xmp>
+</pre>
 </p>
 
 <p>
 <b>Step 4:</b> Add the required <b>jshashtable-2.1.js</b> library inlcude in the example /js/lib/ folder.
 <a href="http://code.google.com/p/jshashtable/">http://code.google.com/p/jshashtable/</a><br>
 <b>Note: This library must be inlcuded before the Frontier Calendar javascript file!</b>
-<xmp>
+<pre>
 WebContent/
   |__js/
   |   |__jquery-core/  
-  |   |     |__jquery-1.4.2.min.js
+  |   |     |__jquery-1.4.2-ie-fix.min.js
   |   |
   |   |__jquery-ui/
   |   |     |__smoothness/
   |   |           |__jquery-ui-1.8.1.custom.min.js
   |   |
   |   |__frontierCalendar/  
-  |   |     |__jquery-frontier-cal-1.1.min.js
+  |   |     |__jquery-frontier-cal-1.2.min.js
   |   |
   |   |__lib/
   |        |__jshashtable-2.1.js
@@ -877,28 +942,28 @@ WebContent/
   |   |           |__jquery-ui-1.8.1.custom.css
   |   |
   |   |__frontierCalendar/  
-  |         |__jquery-frontier-cal-1.1.css
+  |         |__jquery-frontier-cal-1.2.css
   |
   |__index.html
-</xmp>
+</pre>
 </p>
 
 <p>
 <b>Step 5:</b> Inlcude all libraries on your html page. (<b>Note:</b> The colorpicker javascript file and css file are not required. This is used in the example.)
 <xmp>
-<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.1.css" />
+<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.2.css" />
 <!-- Include CSS for color picker plugin (Not required for calendar plugin. Used for example.) -->
 <link rel="stylesheet" type="text/css" href="css/colorpicker/colorpicker.css" />
 <link rel="stylesheet" type="text/css" href="css/jquery-ui/smoothness/jquery-ui-1.8.1.custom.css" />
-<script type="text/javascript" src="js/jquery-core/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="js/jquery-core/jquery-1.4.2-ie-fix.min.js"></script>
 <script type="text/javascript" src="js/jquery-ui/smoothness/jquery-ui-1.8.1.custom.min.js"></script>
 <!-- Include color picker plugin (Not required for calendar plugin. Used for example.) -->
 <script type="text/javascript" src="js/colorpicker/colorpicker.js"></script>
 <!--
-    ** THESE MUST BE INCLUDED BEFORE THE FRONTIER CALENDAR PLUGIN. **
+    ** jshashtable-2.1.js MUST BE INCLUDED BEFORE THE FRONTIER CALENDAR PLUGIN. **
 -->
 <script type="text/javascript" src="js/lib/jshashtable-2.1.js"></script>
-<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.1.min.js"></script>
+<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.2.min.js"></script>
 </xmp>
 </p>
 
@@ -909,13 +974,59 @@ WebContent/
 
 <p>
 Initialize the calendar with the current year and month using the date parameter. Provide callback functions for click events 
-using the <b>dayClickCallback</b> and <b>agendaClickCallback</b> parameters. The <b>dayClickCallback</b> will be fired when users click on a day 
-cell and the <b>agendaClickCallback</b> will be fired when users click on an agenda item.
+using the <b>dayClickCallback</b> and <b>agendaClickCallback</b> parameters, and drop events (drag-and-drop) via the <b>agendaDropCallback</b> option.
+<b>dayClickCallback</b> will be fired when users click on a day 
+cell and <b>agendaClickCallback</b> will be fired when users click on an agenda item. <b>agendaDropCallback</b> will be fired when agenda items are dragged and then
+dropped into a day cell (if drag-and-drop is enabled.)
 </p>
 
 <p>
 After initialization retrieve a reference to the plugin using <b>.data("plugin")</b>. The <b>jfcalplugin</b> object is the interface to 
 the calendar and will be used later to interact with the calendar (add/edit/delete agenda items, etc.)
+</p>
+
+<p>
+<div class="apiHead"><b>Constructor Signature:</b> var jfcalplugin = $('selector').jFrontierCal(date,dayClickCallback,agendaClickCallback,agendaDropCallback,dragAndDropEnabled)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>date</td>
+		<td>javascript Date object</td>
+		<td>A Date object with the year and month you want the calendar initialized to. Remember that with javascript Dates the months start at 0 (Januaray=0)</td>
+	</tr>
+	<tr>
+		<td>dayClickCallback</td>
+		<td>function</td>
+		<td>
+			A function that is triggered when a day cell is clicked. This is where you can create your customized add event form.
+		</td>
+	</tr>
+	<tr>
+		<td>agendaClickCallback</td>
+		<td>function</td>
+		<td>
+			A function that is triggered when an agenda item is clicked. This is where you can create your customized delete/edit agenda item form.
+		</td>
+	</tr>
+	<tr>
+		<td>agendaDropCallback</td>
+		<td>function</td>
+		<td>
+			A function that is called when an agenda item is dropped into a day cell. Here is where you could for example perform an AJAX call to update your database.
+		</td>
+	</tr>
+	<tr>
+		<td>dragAndDropEnabled</td>
+		<td>boolean</td>
+		<td>
+			True to enable drag-and-drop, false to disable.
+		</td>
+	</tr>	
+</table>
 </p>
 
 <div class="codeHead"><b>Example:</b> Initialize Plugin With Current Year & Month</div>
@@ -929,9 +1040,10 @@ $(document).ready(function(){
 	var jfcalplugin = $("#mycal").jFrontierCal({
 		date: new Date(),
 		dayClickCallback: myDayClickHandler,
-		agendaClickCallback: myAgendaClickHandler
+		agendaClickCallback: myAgendaClickHandler,
+		agendaDropCallback: myAgendaDropHandler,
+		dragAndDropEnabled: true
 	}).data("plugin");
-	
 	/**
 	 * Get the date (Date object) of the day that was clicked from the event object
 	 */
@@ -939,14 +1051,22 @@ $(document).ready(function(){
 		var date = eventObj.data.calDayDate;
 		alert("You clicked day " + date.toDateString());
 	};
-	
 	/**
-	 * Get the agenda ID (integer) of the agenda item that was clicked from the event object
+	 * Get the agenda item that was clicked.
 	 */
 	function myAgendaClickHandler (eventObj){
 		var agendaId = eventObj.data.agendaId;
 		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);
 	};
+	/**
+	 * get the agenda item that was dropped. It's start and end dates will be updated.
+	 */
+	function myAgendaDropHandler(eventObj){
+		var agendaId = eventObj.data.agendaId;
+		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
+		alert("Drop event triggered for agenda item " + agendaItem.title + 
+			". Here is where you can make an AJAX call to update your database.");
+	};	
 	
 });
 </script>
@@ -1019,6 +1139,89 @@ jfcalplugin.setAspectRatio("#mycal",0.75);
 
 
 
+<a name="DragAndDrop"></a>
+<h2>Drag And Drop</h2>
+
+
+<p>
+Drag-and-drop works in Chrome, Firefox, Safari, and Opera. If you want IE than you have to use the inlcuded modified jQuery Core file. Please
+read the txt file at <a href="js/jquery-core/README-IE-FIX.TXT">query-frontier-cal-x.x/js/jquery-core/README-IE-FIX.TXT</a> for more information.
+</p>
+
+<p>
+Drag-and-drop is enabled by default. To turn it of pass false for the <b>dragAndDropEnabled</b> when you initialize the calendar.
+</p>
+
+
+<a name="GetCurrentMonthYear"></a>
+<h2>Get Current Month/Year</h2>
+
+<p>
+There are many instances in which you may need to get the current year and month that calendar is displaying. Use the <b>jfcalplugin.getCurrentDate()</b> method 
+to get a javascript Date object.
+</p>
+
+<p>
+<div class="apiHead"><b>Method Signature:</b> getCurrentDate(calId)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>calId</td>
+		<td>String</td>
+		<td>The ID of the calendar div element.</td>
+	</tr>
+	<tr>
+		<td colspan="3">
+			<b>Returns:</b> A javascript Date object with the year and month that the calendar is currently set to.
+		</td>
+	</tr>	
+</table>
+</p>
+
+<div class="codeHead"><b>Example:</b> Get calendar Date (year & month)</div>
+<xmp class="code">
+<script type="text/javascript">
+$(document).ready(function(){
+
+	/**
+	 * Initialize with current year and date. Returns reference to plugin object.
+	 */
+	var jfcalplugin = $("#mycal").jFrontierCal({
+		date: new Date(),
+		dayClickCallback: myDayClickHandler,
+		agendaClickCallback: myAgendaClickHandler,
+		agendaDropCallback: myAgendaDropHandler,
+		dragAndDropEnabled: true
+	}).data("plugin");
+	
+	// date with the year and month the calendar is set to.
+	var calDate = jfcalplugin.getCurrentDate("#mycal");
+	
+	function myDayClickHandler(eventObj){
+		var date = eventObj.data.calDayDate;
+	};
+	function myAgendaClickHandler (eventObj){
+		var agendaId = eventObj.data.agendaId;
+		var item = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
+	};
+	function myAgendaDropHandler(eventObj){
+		var agendaId = eventObj.data.agendaId;
+		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
+		alert("Drop event triggered for agenda item " + agendaItem.title + 
+			". Here is where you can make an AJAX call to update your database.");
+	};
+	
+});
+</script>
+
+<div id="mycal"></div>
+
+</xmp>
+
 
 <a name="RetrieveAgendaItem"></a>
 <h2>Retrieve Agenda Items</h2>
@@ -1034,6 +1237,7 @@ To retrieve agenda items from the calendar use <b>jfcalplugin.getAgendaItemById(
 	title: [string]
 	startDate: [Date],
 	endDate: [Date],
+	allDay: [boolean],
 	data: {
 		key1: [value1],
 		key2: [value2],
@@ -1150,7 +1354,9 @@ $(document).ready(function(){
 	var jfcalplugin = $("#mycal").jFrontierCal({
 		date: new Date(),
 		dayClickCallback: myDayClickHandler,
-		agendaClickCallback: myAgendaClickHandler
+		agendaClickCallback: myAgendaClickHandler,
+		agendaDropCallback: myAgendaDropHandler,
+		dragAndDropEnabled: true
 	}).data("plugin");
 	
 	// add sample item so we can retrieve it
@@ -1159,6 +1365,7 @@ $(document).ready(function(){
 		"Indiana Jones and the Last Crusade",
 		new Date(1989,4,24,1,0,0,0),
 		new Date(1989,4,24,23,59,59,999),
+		false,
 		{
 			fname: "Indiana",
 			lname: "Jones",
@@ -1174,9 +1381,14 @@ $(document).ready(function(){
 	};
 	function myAgendaClickHandler (eventObj){
 		var agendaId = eventObj.data.agendaId;
-		// retrieve agend item by ID
 		var item = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
 	};
+	function myAgendaDropHandler(eventObj){
+		var agendaId = eventObj.data.agendaId;
+		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
+		alert("Drop event triggered for agenda item " + agendaItem.title + 
+			". Here is where you can make an AJAX call to update your database.");
+	};	
 	
 	// retrieve agend item by data attribute
 	var item = jfcalplugin.getAgendaItemByDataAttr("#mycal","fname","Indiana");
@@ -1202,7 +1414,7 @@ To add an agenda item to the calendar use the <b>jfcalplugin.addAgendaItem()</b>
 </p>
 
 <p>
-<div class="apiHead"><b>Method Signature:</b> addAgendaItem(calId,title,startDate,endDate,data,displayProp)</div>
+<div class="apiHead"><b>Method Signature:</b> addAgendaItem(calId,title,startDate,endDate,allDay,data,displayProp)</div>
 <table class="apiTable">
 	<tr>
 		<th>Parameter</th>
@@ -1229,6 +1441,11 @@ To add an agenda item to the calendar use the <b>jfcalplugin.addAgendaItem()</b>
 		<td>Date</td>
 		<td>Date & time the agenda event ends.</td>
 	</tr>
+	<tr>
+		<td>allDay</td>
+		<td>boolean</td>
+		<td>True if an all day event (do not show start time on agenda div element), false otherwise. False by default.</td>
+	</tr>	
 	<tr>
 		<td>data</td>
 		<td>Object</td>
@@ -1266,6 +1483,7 @@ jfcalplugin.addAgendaItem(
 	"Christmas Eve",
 	new Date(2010,11,24,20,0,0,0),
 	new Date(2010,11,24,23,59,59,999),
+	false,
 	{
 		fname: "Santa",
 		lname: "Claus",
@@ -1286,7 +1504,7 @@ jfcalplugin.addAgendaItem(
 <h2>Delete Agenda Items</h2>
 
 <p>
-To delete an agenda item use either the <b>jfcalplugin.deleteAgendaItemById()</b> method or the <b>jfcalplugin.deleteAgendaItemByDataAttr()</b> method.
+To delete an agenda item use either <b>jfcalplugin.deleteAgendaItemById()</b>, or <b>jfcalplugin.deleteAgendaItemByDataAttr()</b>, or <b>jfcalplugin.deleteAllAgendaItems()</b> methods.
 </p>
 
 <p>
@@ -1318,14 +1536,15 @@ $(document).ready(function(){
 	var jfcalplugin = $("#mycal").jFrontierCal({
 		date: new Date(),
 		dayClickCallback: myDayClickHandler,
-		agendaClickCallback: myAgendaClickHandler
+		agendaClickCallback: myAgendaClickHandler,
+		agendaDropCallback: myAgendaDropHandler,
+		dragAndDropEnabled: true
 	}).data("plugin");
 	
 	function myDayClickHandler(eventObj){
 		var date = eventObj.data.calDayDate;
 		alert("You clicked day " + date.toDateString());
 	};
-	
 	/**
 	 * Delete any agenda item when it's clicked.
 	 */
@@ -1333,6 +1552,12 @@ $(document).ready(function(){
 		var agendaId = eventObj.data.agendaId;
 		jfcalplugin.deleteAgendaItemById("#mycal",agendaId);
 	};
+	function myAgendaDropHandler(eventObj){
+		var agendaId = eventObj.data.agendaId;
+		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
+		alert("Drop event triggered for agenda item " + agendaItem.title + 
+			". Here is where you can make an AJAX call to update your database.");
+	};		
 	
 });
 </script>
@@ -1389,7 +1614,9 @@ $(document).ready(function(){
 	var jfcalplugin = $("#mycal").jFrontierCal({
 		date: new Date(),
 		dayClickCallback: myDayClickHandler,
-		agendaClickCallback: myAgendaClickHandler
+		agendaClickCallback: myAgendaClickHandler,
+		agendaDropCallback: myAgendaDropHandler,
+		dragAndDropEnabled: true
 	}).data("plugin");
 	
 	// add sample item so we can delete it
@@ -1398,6 +1625,7 @@ $(document).ready(function(){
 		"Indiana Jones and the Last Crusade",
 		new Date(1989,4,24,1,0,0,0),
 		new Date(1989,4,24,23,59,59,999),
+		false,
 		{
 			fname: "Indiana",
 			lname: "Jones",
@@ -1407,13 +1635,11 @@ $(document).ready(function(){
 			backgroundColor: "#FF0000",
 			foregroundColor: "#FFFFFF"
 		}	
-	);	
-	
+	);
 	function myDayClickHandler(eventObj){
 		var date = eventObj.data.calDayDate;
 		alert("You clicked day " + date.toDateString());
 	};
-	
 	/**
 	 * Delete the clicked agenda item if it has a data attribute name "artifact" with value "Holy Grail"
 	 */
@@ -1421,6 +1647,61 @@ $(document).ready(function(){
 		var agendaId = eventObj.data.agendaId;
 		jfcalplugin.deleteAgendaItemByDataAttr("#mycal","artifact","Holy Grail");
 	};
+	function myAgendaDropHandler(eventObj){
+		var agendaId = eventObj.data.agendaId;
+		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
+		alert("Drop event triggered for agenda item " + agendaItem.title + 
+			". Here is where you can make an AJAX call to update your database.");
+	};		
+	
+});
+</script>
+
+<div id="mycal"></div>
+
+</xmp>
+
+<p>
+<div class="apiHead"><b>Method Signature:</b> deleteAllAgendaItems(calId)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>calId</td>
+		<td>String</td>
+		<td>The ID of the calendar div element.</td>
+	</tr>	
+</table>
+</p>
+
+<div class="codeHead"><b>Example:</b> Delete all agenda items.</div>
+<xmp class="code">
+<script type="text/javascript">
+$(document).ready(function(){
+
+	var jfcalplugin = $("#mycal").jFrontierCal({
+		date: new Date(),
+		dayClickCallback: myDayClickHandler,
+		agendaClickCallback: myAgendaClickHandler,
+		agendaDropCallback: myAgendaDropHandler,
+		dragAndDropEnabled: true
+	}).data("plugin");
+	
+	jfcalplugin.deleteAllAgendaItems("#mycal");
+	
+	function myAgendaClickHandler (eventObj){
+		var agendaId = eventObj.data.agendaId;
+		jfcalplugin.deleteAgendaItemByDataAttr("#mycal","artifact","Holy Grail");
+	};
+	function myAgendaDropHandler(eventObj){
+		var agendaId = eventObj.data.agendaId;
+		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
+		alert("Drop event triggered for agenda item " + agendaItem.title + 
+			". Here is where you can make an AJAX call to update your database.");
+	};		
 	
 });
 </script>
@@ -1492,8 +1773,10 @@ $(document).ready(function(){
 	var jfcalplugin = $("#mycal").jFrontierCal({
 		date: new Date(),
 		dayClickCallback: myDayClickHandler,
-		agendaClickCallback: myAgendaClickHandler
-	}).data("plugin");	
+		agendaClickCallback: myAgendaClickHandler,
+		agendaDropCallback: myAgendaDropHandler,
+		dragAndDropEnabled: true
+	}).data("plugin");
 	
 	// load our sample FIFA World Cup 2010 iCal file in the extra/ folder inlcuded with this example.
 	jfcalplugin.loadICalSource("#mycal","extra/fifa-world-cup-2010.ics","application/octet-stream");	
@@ -1502,10 +1785,15 @@ $(document).ready(function(){
 		var date = eventObj.data.calDayDate;
 		alert("You clicked day " + date.toDateString());
 	};
-	
 	function myAgendaClickHandler (eventObj){
 		var agendaId = eventObj.data.agendaId;
 	};
+	function myAgendaDropHandler(eventObj){
+		var agendaId = eventObj.data.agendaId;
+		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
+		alert("Drop event triggered for agenda item " + agendaItem.title + 
+			". Here is where you can make an AJAX call to update your database.");
+	};	
 	
 });
 </script>
@@ -1520,6 +1808,59 @@ $(document).ready(function(){
 <p>&nbsp;</p>
 <a name="ChangeLog"></a>
 <h2>Change Log</h2>
+
+<p>
+<b>June 17th, 2010 - Version 1.2:</b>
+<ul>
+	<li>More Bug fixes</li>
+	<li>
+		<b>CSS tweaks</b><br>
+		New CSS attribute for the current day.<br>
+		Arrows on agenda items that span weeks & months.
+	</li>
+	<li>
+		<b>Drag-and-drop agenda items!</b><br>
+		This required a modification to the jQuery Core library to enable drag-and-drop to work correctly in Internet Explorer.
+		If you don't care about IE than you can use an unmodified version of the jQuery Core library. Everything works fine in Chrome, Firefox, Opera, and Safari without the fix.
+		There is a readme file inlcuded with this plugin, <a href="js/jquery-core/README-IE-FIX.TXT">query-frontier-cal-x.x/js/jquery-core/README-IE-FIX.TXT</a>, 
+		that explains what was modified. Only one line was changed so not that big of a deal....
+	</li>
+	<li>
+		<b>The jfcalplugin.addAgendaItem() method changed slightly.</b><br>
+		The new method signature is jfcalplugin.addAgendaItem(calId,title,startDate,endDate,allDay,data,displayProp).
+		The new parameter is the boolean value 'allDay' which did not exist in version 1.1. This is a flag that tells the calendar the agenda item is an all day event. If you want
+		the same exact functionality as version 1.1 then simply pass in 'false'. If you pass in 'true' then the start time will not be displayed on the agenda item.
+	</li>
+	<li>
+		All the getAgendaItem methods return an updated agenda object which inlcudes the allDay flag.
+<xmp>
+{
+	agendaId: [integer],
+	title: [string]
+	startDate: [Date],
+	endDate: [Date],
+	allDay: [boolean],
+	data: {
+		key1: [value1],
+		key2: [value2],
+		etc...
+	},
+	displayProp: {
+		backgroundColor: [string],
+		foregroundColor: [string]
+	}
+}
+</xmp>		
+	</li>
+	<li>
+		<b>The constructor/initialize method changed slightly.</b><br>
+		There is a new boolean parameter called dragAndDropEnabled which allows you to turn off drag-and-drop. This is enabled by default.
+<xmp>
+var jfcalplugin = $('selector').jFrontierCal(date,dayClickCallback,agendaClickCallback,agendaDropCallback,dragAndDropEnabled)
+</xmp>
+	</li>	
+</ul>
+</p>
 
 <p>
 <b>June 14th, 2010 - Version 1.1:</b>
