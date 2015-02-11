@@ -5,7 +5,7 @@
 <title>Frontier JQuery Calendar</title>
 
 <!-- Include CSS for JQuery Frontier Calendar plugin (Required for calendar plugin) -->
-<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.3.css" />
+<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.3.1.css" />
 
 <!-- Include CSS for color picker plugin (Not required for calendar plugin. Used for example.) -->
 <link rel="stylesheet" type="text/css" href="css/colorpicker/colorpicker.css" />
@@ -36,7 +36,7 @@ Include JQuery Core (Required for calendar plugin)
 <script type="text/javascript" src="js/lib/jshashtable-2.1.js"></script>
 
 <!-- Include JQuery Frontier Calendar plugin -->
-<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.3.min.js"></script>
+<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.3.1.js"></script>
 
 </head>
 <body style="background-color: #aaaaaa;">
@@ -277,7 +277,7 @@ $(document).ready(function(){
 		return false;
 	});
 	/**
-	 * Initialize previous month button
+	 * Initialize next month button
 	 */
 	$("#BtnNextMonth").button();
 	$("#BtnNextMonth").click(function() {
@@ -911,6 +911,7 @@ table.apiTable td {
 <li><a href="#DeleteAgendaItem">Delete Agenda Items</a></li>
 <li><a href="#EditAgendaItem">Edit Agenda Items</a></li>
 <li><a href="#iCalSupport">iCal Support</a></li>
+<li><a href="#Troubleshoot">Troubleshooting</a></li>
 <li><a href="#ChangeLog">Change Log</a></li>
 </ul>
 
@@ -1005,7 +1006,7 @@ WebContent/
   |   |           |__jquery-ui-1.8.1.custom.min.js
   |   |
   |   |__frontierCalendar/  
-  |         |__jquery-frontier-cal-1.3.min.js
+  |         |__jquery-frontier-cal-1.3.1.min.js
   |
   |__css/
   |   |__jquery-ui/
@@ -1013,7 +1014,7 @@ WebContent/
   |   |           |__jquery-ui-1.8.1.custom.css
   |   |
   |   |__frontierCalendar/  
-  |         |__jquery-frontier-cal-1.3.css
+  |         |__jquery-frontier-cal-1.3.1.css
   |
   |__index.html
 </pre>
@@ -1034,7 +1035,7 @@ WebContent/
   |   |           |__jquery-ui-1.8.1.custom.min.js
   |   |
   |   |__frontierCalendar/  
-  |   |     |__jquery-frontier-cal-1.3.min.js
+  |   |     |__jquery-frontier-cal-1.3.1.min.js
   |   |
   |   |__lib/
   |        |__jshashtable-2.1.js
@@ -1045,7 +1046,7 @@ WebContent/
   |   |           |__jquery-ui-1.8.1.custom.css
   |   |
   |   |__frontierCalendar/  
-  |         |__jquery-frontier-cal-1.3.css
+  |         |__jquery-frontier-cal-1.3.1.css
   |
   |__index.html
 </pre>
@@ -1068,7 +1069,7 @@ WebContent/
     ** jshashtable-2.1.js MUST BE INCLUDED BEFORE THE FRONTIER CALENDAR PLUGIN. **
 -->
 <script type="text/javascript" src="js/lib/jshashtable-2.1.js"></script>
-<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.3.min.js"></script>
+<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.3.1.min.js"></script>
 </xmp>
 </p>
 
@@ -2215,10 +2216,79 @@ function myAgendaDropHandler(eventObj){
 
 
 
+<p>&nbsp;</p>
+<a name="Troubleshoot"></a>
+<h2>Troubleshooting</h2>
+
+<p>
+If another element on your page changes size, causing the calendar div element to move, you may notice that the agenda items
+are not properly aligned. For example, if you have an element above the calendar that grows in height than the celendar div
+element will be pushed down further on the page. Since the agenda items are absolutely positioned over the calendar day cells
+they will not move, and they will not be properly aligned over the calendar.
+</p>
+
+<table style="width: 100%;">
+	<tr>
+		<td style="width: 50%;">
+			<p>
+			<b>Before:</b> Agenda items are posititoned correctly.
+			</p>
+			<img src="documentationImages/CalMove02.png" style="border: 0px solid;">
+		</td>
+		<td>
+			<p>
+			<b>After:</b> element above calendar cause calendar div to shift down. Absolute positioned agenda items do not
+			shift down with the calendar. Looks bad! :(
+			</p>		
+			<img src="documentationImages/CalMove03.png" style="border: 0px solid;">
+		</td>
+	</tr>
+</table>
+
+<p>
+<b>Solution 1:</b> Call the <b>reRenderAgendaItems(calId)</b> function to re-render the agenda items after the calendar moves.
+</p>
+
+<p>
+<b>Solution 2:</b> Make sure there is nothing on your page that will cause the calendar div element to move! :)
+</p>
+
+<div class="codeHead"><b>Example:</b> Re-render agenda items function.</div>
+<textarea class="code" style="height: 400px;">
+/**
+ * Initializes calendar.
+ */
+var jfcalplugin = $("#mycal").jFrontierCal({
+	date: new Date(),
+	dayClickCallback: myDayClickHandler,
+	agendaClickCallback: myAgendaClickHandler,
+	agendaDropCallback: myAgendaDropHandler,
+	agendaMouseoverCallback: myAgendaMouseoverHandler,
+	applyAgendaTooltipCallback: myApplyTooltip,
+	agendaDragStartCallback : myAgendaDragStart,
+	agendaDragStopCallback : myAgendaDragStop,
+	dragAndDropEnabled: true
+}).data("plugin");
+
+// re-render agenda items if calendar element moves
+jfcalplugin.reRenderAgendaItems("#mycal");	
+	
+</textarea>
 
 <p>&nbsp;</p>
 <a name="ChangeLog"></a>
 <h2>Change Log</h2>
+
+<p>
+<b>June 23nd, 2010 - Version 1.3.1</b>
+</p>
+<ul>
+<li>Crucial bug fix to the <b>deleteAgendaItemByDataAttr(calId,attrName,attrValue)</b> function.</li>
+<br>
+<li>New <b>reRenderAgendaItems(calId)</b> function that allows you to re-render the agenda items if they get out of alignment. See <a href="#Troubleshoot">Troubleshooting</a> section for further information</li>
+</ul>
+
+<br>
 
 <p>
 <b>June 22nd, 2010 - Version 1.3</b>
