@@ -5,7 +5,7 @@
 <title>Frontier JQuery Calendar</title>
 
 <!-- Include CSS for JQuery Frontier Calendar plugin (Required for calendar plugin) -->
-<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.0.css" />
+<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.1.css" />
 
 <!-- Include CSS for color picker plugin (Not required for calendar plugin. Used for example.) -->
 <link rel="stylesheet" type="text/css" href="css/colorpicker/colorpicker.css" />
@@ -30,7 +30,7 @@
 <script type="text/javascript" src="js/lib/jshashtable-2.1.js"></script>
 
 <!-- Include JQuery Frontier Calendar plugin -->
-<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.0.min.js"></script>
+<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.1.min.js"></script>
 
 </head>
 <body style="background-color: #aaaaaa;">
@@ -66,7 +66,7 @@ $(document).ready(function(){
 
 	// make the day cells roughly 3/4th as tall as they are wide. this makes our calendar wider than it is tall. 
 	jfcalplugin.setAspectRatio("#mycal",0.75);
-	
+
 	/*
 	called when user clicks day cell
 	use reference to plugin object to add agenda item
@@ -163,6 +163,20 @@ $(document).ready(function(){
 		$("#dateSelect").datepicker("setDate",cyear+"-"+(cmonth+1)+"-"+cday);		
 		return false;
 	});
+	
+	/*
+	initialize iCal test button
+	*/
+	$("#BtnICalTest").button();
+	/*
+	use reference to plugin object to show next month
+	*/
+	$("#BtnICalTest").click(function() {
+		// Please note that in Google Chrome this will not work with a local file. Chrome prevents AJAX calls
+		// from reading local files on disk.		
+		jfcalplugin.loadICalSource("#mycal",$("#iCalSource").val(),"html");	
+		return false;
+	});	
 
 	/*
 	initialize add event modal form
@@ -369,21 +383,15 @@ $(document).ready(function(){
 				var startDate = clickAgendaItem.startDate;
 				var endDate = clickAgendaItem.endDate;
 				var data = clickAgendaItem.data;
-				// in our example add agenda modal form we put some fake data in the agenda data. we can retrieve it here.
-				var fname = data.fname;
-				var lname = data.lname;
-				var leadReindeer = data.leadReindeer;
-				var myDate = data.myDate;			
+				// in our example add agenda modal form we put some fake data in the agenda data. we can retrieve it here.			
 				$("#display-event-form").append(
 					"<br><b>" + title+ "</b><br><br>" +
 					"<b>Starts:</b> " + startDate + "<br>" +
-					"<b>Ends:</b> " + endDate + "<br><br>" +
-					"<b>Stored Data:</b><br><br>" +
-					fname + "<br>" +
-					lname + "<br>" +
-					leadReindeer + "<br>" +
-					myDate					
+					"<b>Ends:</b> " + endDate + "<br><br>"				
 				);
+				for (var propertyName in data) {
+					$("#display-event-form").append("<b>" + propertyName + ":</b> " + data[propertyName] + "<br>");
+				}			
 			}		
 		},
 		close: function() {
@@ -446,12 +454,20 @@ $(document).ready(function(){
 		<br>
 		
 		<p><b>Click the calendar to add some agenda items.</b></p>
+		
+		<p><b>
+		Please note that Chrome prevents AJAX calls from reading local files on disk so the iCal example will not work. Try in Firefox, Safari, Opera, or IE.
+		For Chrome it should work when the iCal file is hosted online from your domain.
+		</b></p>
 
 		<div id="toolbar" class="ui-widget-header ui-corner-all" style="padding:3px; vertical-align: middle; white-space:nowrap;">
 			<button id="BtnPreviousMonth">Previous Month</button>
 			<button id="BtnNextMonth">Next Month</button>
 			&nbsp;&nbsp;&nbsp;
 			Date: <input type="text" id="dateSelect" size="20"/>
+			&nbsp;&nbsp;&nbsp;
+			<button id="BtnICalTest">iCal Test</button>
+			<input type="text" id="iCalSource" size="40" value="extra/fifa-world-cup-2010.ics"/>
 		</div>
 
 		<br>
@@ -631,7 +647,29 @@ $(document).ready(function(){
 
 
 	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	<div id="tabs-3">
+	
+<!--
+
+Begin Documentation
+
+-->
 
 <style type="text/css" media="screen">
 a {
@@ -711,6 +749,8 @@ table.apiTable td {
 <li><a href="#AddAgendaItem">Add Agenda Items</a></li>
 <li><a href="#DeleteAgendaItem">Delete Agenda Items</a></li>
 <li><a href="#EditAgendaItem">Edit Agenda Items</a></li>
+<li><a href="#iCalSupport">iCal Support</a></li>
+<li><a href="#ChangeLog">Change Log</a></li>
 </ul>
 
 <a name="License"></a>
@@ -797,7 +837,7 @@ WebContent/
   |   |           |__jquery-ui-1.8.1.custom.min.js
   |   |
   |   |__frontierCalendar/  
-  |         |__jquery-frontier-cal-1.0.min.js
+  |         |__jquery-frontier-cal-1.1.min.js
   |
   |__css/
   |   |__jquery-ui/
@@ -805,7 +845,7 @@ WebContent/
   |   |           |__jquery-ui-1.8.1.custom.css
   |   |
   |   |__frontierCalendar/  
-  |         |__jquery-frontier-cal-1.0.css
+  |         |__jquery-frontier-cal-1.1.css
   |
   |__index.html
 </xmp>
@@ -826,7 +866,7 @@ WebContent/
   |   |           |__jquery-ui-1.8.1.custom.min.js
   |   |
   |   |__frontierCalendar/  
-  |   |     |__jquery-frontier-cal-1.0.min.js
+  |   |     |__jquery-frontier-cal-1.1.min.js
   |   |
   |   |__lib/
   |        |__jshashtable-2.1.js
@@ -837,7 +877,7 @@ WebContent/
   |   |           |__jquery-ui-1.8.1.custom.css
   |   |
   |   |__frontierCalendar/  
-  |         |__jquery-frontier-cal-1.0.css
+  |         |__jquery-frontier-cal-1.1.css
   |
   |__index.html
 </xmp>
@@ -846,7 +886,7 @@ WebContent/
 <p>
 <b>Step 5:</b> Inlcude all libraries on your html page. (<b>Note:</b> The colorpicker javascript file and css file are not required. This is used in the example.)
 <xmp>
-<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.0.css" />
+<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.1.css" />
 <!-- Include CSS for color picker plugin (Not required for calendar plugin. Used for example.) -->
 <link rel="stylesheet" type="text/css" href="css/colorpicker/colorpicker.css" />
 <link rel="stylesheet" type="text/css" href="css/jquery-ui/smoothness/jquery-ui-1.8.1.custom.css" />
@@ -858,7 +898,7 @@ WebContent/
     ** THESE MUST BE INCLUDED BEFORE THE FRONTIER CALENDAR PLUGIN. **
 -->
 <script type="text/javascript" src="js/lib/jshashtable-2.1.js"></script>
-<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.0.min.js"></script>
+<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.1.min.js"></script>
 </xmp>
 </p>
 
@@ -1396,6 +1436,104 @@ $(document).ready(function(){
 <p>Documentation coming soon!</p>
 
 <p>For now you simply pull the agenda item from the calendar, update it, delete the existing entry and then re-add it. I will have a nice update method later.</p>	
+	
+
+
+<p>&nbsp;</p>
+<a name="iCalSupport"></a>
+<h2>iCal Support</h2>
+
+<p>
+Frontier calendar has some basic iCal support. You can import iCal VEVENT data from an iCal file using 
+the <b>jfcalplugin.loadICalSource(calId,iCalUrl,responseDataType) method.</b>
+</p>
+
+<p>
+Please note that I don't know every much about iCal... The above method just parses out the VEVENT data and builds agenda items.
+</p>
+
+<p>
+<div class="apiHead"><b>Method Signature:</b> loadICalSource(calId,iCalUrl,responseDataType)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>calId</td>
+		<td>String</td>
+		<td>The ID of the calendar div element.</td>
+	</tr>
+	<tr>
+		<td>iCalUrl</td>
+		<td>String</td>
+		<td>
+			Path to the iCal file. This can be a local path on disk or a URL. This resource will be requested using a jQuery AJAX call.<br>
+			<b>Please note:</b> This will not work on Chrome for local files. See 
+			<a href="http://code.google.com/p/chromium/issues/detail?id=40787">http://code.google.com/p/chromium/issues/detail?id=40787</a>
+		</td>
+	</tr>	
+	<tr>
+		<td>responseDataType</td>
+		<td>string</td>
+		<td>
+			Data type of the response data, something like "text/html" or "application/octet-stream", etc...<br>
+		</td>
+	</tr>		
+</table>
+</p>
+
+<div class="codeHead"><b>Example:</b> Load iCal data.</div>
+<xmp class="code">
+<script type="text/javascript">
+$(document).ready(function(){
+
+	var jfcalplugin = $("#mycal").jFrontierCal({
+		date: new Date(),
+		dayClickCallback: myDayClickHandler,
+		agendaClickCallback: myAgendaClickHandler
+	}).data("plugin");	
+	
+	// load our sample FIFA World Cup 2010 iCal file in the extra/ folder inlcuded with this example.
+	jfcalplugin.loadICalSource("#mycal","extra/fifa-world-cup-2010.ics","application/octet-stream");	
+	
+	function myDayClickHandler(eventObj){
+		var date = eventObj.data.calDayDate;
+		alert("You clicked day " + date.toDateString());
+	};
+	
+	function myAgendaClickHandler (eventObj){
+		var agendaId = eventObj.data.agendaId;
+	};
+	
+});
+</script>
+
+<div id="mycal"></div>
+
+</xmp>
+
+
+
+
+<p>&nbsp;</p>
+<a name="ChangeLog"></a>
+<h2>Change Log</h2>
+
+<p>
+<b>June 14th, 2010 - Version 1.1:</b>
+<ul>
+	<li>Bug fixes</li>
+	<li>CSS tweaks</li>
+	<li>Performance tweaks...Yes, it runs slow in IE...</li>
+	<li>Basic VEVENT iCal support.</li>
+</ul>
+</p>
+
+<p>
+<b>June 9th, 2010 - Version 1.0: Initial release.</b>
+</p>
 	
 	</div>
 
