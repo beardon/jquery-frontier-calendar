@@ -1,6 +1,7 @@
 /**
  * Frontier JQuery Full Calendar Plugin.
  *
+ * June 14, 2010 - v1.1 - Second release. Few bug fixes, tweaks, and basic VEVENT ical support.
  * June 9, 2010 - v1.0 - Initial version.
  *
  * Seth Lenzi
@@ -11,24 +12,28 @@
  *
  * Dependencies:
  *
- * This plugin requires the following javascript libraries. They are in the js/ folder
- * that should have come with this plugin. (WResize is inlcuded below) Make sure to inlcude them in your HTML (before
- * you include this plugin.)
+ * This plugin requires the following javascript libraries.
  *
- * 1) JQuery Core and JQuery UI!
+ * 1) JQuery Core and JQuery UI.
+ *    Both should already be inlcuded with this plugin.
  *    http://jquery.com/
  *    http://jqueryui.com   
  *
  * 2) jshashtable.js
+ *    Should be included with this plugin in the js/lib/ folder.
  *    Tim Down
  *    http://code.google.com/p/jshashtable/
  *    http://www.timdown.co.uk/jshashtable/index.html
  *
  * 3) WResize is the jQuery plugin for fixing the IE window resize bug.
- *    (This plugin is already included at the end of this file.)
+ *    This plugin is already included at the end of this file.
  *    Copyright 2007 / Andrea Ercolino
  *    LICENSE: http://www.opensource.org/licenses/mit-license.php 
  *    WEBSITE: http://noteslog.com/
+ *
+ * 4) Javascript iCal parsers. Merci!
+ *    This is already included in this file.
+ *    http://code.google.com/p/ijp/
  */ 
 (function($) {
 
@@ -200,7 +205,8 @@
 		All the agenda <div> elements being rendered over this day cell.
 		keys are integers (agenda ID), values are jquery objects (agenda <div> elements)
 		*/
-		this.agendaDivHash = new Hashtable();
+		//this.agendaDivHash = new Hashtable();
+		this.agendaDivArray = new Array();
 		
 		// the query object for the "more" link
 		this.jqyMoreDiv = null;
@@ -244,7 +250,8 @@
 		 * @param element - jquery object - the agenda <div> element.
 		 */
 		this.addAgendaDivElement = function(id,element){
-			this.agendaDivHash.put(id,element);
+			//this.agendaDivHash.put(id,element);
+			this.agendaDivArray.push(element);
 		};
 		
 		/**
@@ -253,7 +260,8 @@
 		this.clearAgendaDivElements = function(){
 			this.clearHtml();
 			this.jqyMoreDiv = null;
-			this.agendaDivHash = new Hashtable();
+			//this.agendaDivHash = new Hashtable();
+			this.agendaDivArray = new Array();
 		};
 
 		/**
@@ -267,12 +275,14 @@
 		 */
 		this.getNextAgendaYstartY = function(startY,agendaDivHeight,moreDivHeight){
 			var nextY = startY;
-			var divArray = this.agendaDivHash.values();
+			//var divArray = this.agendaDivHash.values();
+			var divArray = this.agendaDivArray;
+			var max = (this.getY() + this.getHeight()) - (agendaDivHeight+1) - (moreDivHeight+1);
 			if(divArray != null && divArray.length > 0){
 				// sort agenda <div> elements by their Y coordinates
 				divArray.sort(this.sortDivByY);
 				var divTop = 0;
-				var divBottom = 0;
+				var divBottom = 0; 
 				for(var i = 0; i < divArray.length; i++){
 					// using position.top seems to produce incorrect results in IE (at least IE 7). We get the top value using the css() call instead
 					divTop = parseInt(divArray[i].css("top").replace("px",""));
@@ -287,7 +297,7 @@
 					}
 				}
 			}
-			if( nextY > ((this.getY()+this.getHeight()) - (agendaDivHeight+1) - (moreDivHeight+1)) ){
+			if( nextY > max ){
 				// no room for another agenda <div> element of the height specified.
 				return -1;
 			}
@@ -313,8 +323,10 @@
 		/**
 		 * Alerts the positions of all the agenda div elements.
 		 */
+		/*
 		this.debugDivElements = function(){
-			var divArray = this.agendaDivHash.values();
+			//var divArray = this.agendaDivHash.values();
+			var divArray = this.agendaDivArray;
 			if(divArray != null && divArray.length > 0){
 				divArray.sort(this.sortDivByY);
 				var s = divArray.length + " agenda div elements for " + this.date + ":\n\n";
@@ -330,6 +342,7 @@
 				alert("No agenda div elements for " + this.date);
 			}
 		}
+		*/
 		
 		/**
 		 * set the date for this day cell
@@ -1175,6 +1188,9 @@
 			// get all CalendarAgendaItem objects from our Hashtable
 			var itemArray = this.agendaItems.values();
 			
+			// sort agenda items by start date
+			itemArray.sort(Calendar.sortAgendaItemsByStartDate);
+			
 			// loop through each CalendarAgendaItem and render it
 			for(var itemIndex = 0; itemIndex < this.agendaItems.size(); itemIndex++){
 				// CalendarAgendaItem object
@@ -1190,8 +1206,9 @@
 		 * @param agi - CalendarAgendaItem - The agenda item to render.
 		 */
 		this.renderSingleAgendaItem = function(agi){
-		
-			//alert("Calendar.renderSingleAgendaItem() called.");
+			
+			var now = new Date();
+			LogUtil.log("Calendar.renderSingleAgendaItem() called.");
 		
 			if(agi == null){
 				return;
@@ -1325,6 +1342,9 @@
 				
 			}
 			
+			var then = new Date();
+			LogUtil.log("Calendar.renderSingleAgendaItem() end. Elapsed time in ms = " + Math.abs(then - now));
+			
 		};
 		
 		/**
@@ -1436,7 +1456,7 @@
 		 * @param eventObj - The event object from the click event. Should have the following values in its data.
 		 *					 eventObj.data.callBack - The users custom click event callback function.
 		 *					 eventObj.data.agendaId - The ID of the agenda item that was clicked.
-	     *
+	     	 *
 		 */
 		this.clickAgendaFromCalendarHandler = function(eventObj){
 			eventObj.stopPropagation();
@@ -1454,7 +1474,7 @@
 		 * @param eventObj - The event object from the click event. Should have the following values in its data.
 		 *					 eventObj.data.callBack - The users custom click event callback function.
 		 *					 eventObj.data.agendaId - The ID of the agenda item that was clicked.
-         *					 eventObj.data.dialog - Reference to the "more agenda items" modal dialog.		 
+         	 *					 eventObj.data.dialog - Reference to the "more agenda items" modal dialog.		 
 		 */
 		this.clickAgendaFromCalendarMoreModalDialog = function(eventObj){
 			var modalDialog = eventObj.data.dialog;
@@ -1628,6 +1648,9 @@
 			var nextDatObj = null;
 			var found = false;
 			var nextYArray = null;
+			var startDt;
+			var endDt;
+			var nextDt;
 			
 			//startDayObj.debugDivElements();
 
@@ -1635,16 +1658,16 @@
 			// if we get into a nasty loop this upper maximum will eventually end it.
 			var maxIterations = 100;
 			
-			while(!found || itrIndex <= maxIterations){
+			while(!found /*|| itrIndex <= maxIterations*/){
 				nextYArray = new Array();
 				nextY = startDayObj.getNextAgendaYstartY(nextY,agendaDivHeight,moreDivHeight);
 				if(nextY > maxY){
 					maxY = nextY;
 				}
 				nextYArray.push(nextY);
-				var startDt = startDayObj.getDate();
-				var endDt = endDayObj.getDate();
-				var nextDt = DateUtil.getNextDay(startDt);
+				startDt = startDayObj.getDate();
+				endDt = endDayObj.getDate();
+				nextDt = DateUtil.getNextDay(startDt);
 				while(DateUtil.daysDifferenceDirection(nextDt,endDt) >= 0){
 					nextDatObj = this.getCalendarDayObjByDate(nextDt);
 					//nextDatObj.debugDivElements();
@@ -1686,18 +1709,12 @@
 		 * @return A CalendarDayCell object with the matching date, or null.
 		 */
 		this.getCalendarDayObjByDate = function(date){
-		
-			/*
-			if(date == null){
-				return null;
-			}
-			if(this.dayHash == null || this.dayHash.size() == 0){
+			if(date == null || this.dayHash == null){
 				return null;
 			}
 			var key = (date.getFullYear()+"") + (date.getMonth()+"") + (date.getDate()+"");
 			return this.dayHash.get(key);
-			*/
-			
+			/*
 			if(date == null){
 				return null;
 			}
@@ -1720,7 +1737,7 @@
 					}
 				}
 			}
-			
+			*/
 		};
 		
 		/**
@@ -2458,6 +2475,24 @@
 	// static properties
 	Calendar.dayNames = new Array("Sun","Mon","Tue","Wed","Thu","Fri","Sat");
 	/**
+	 * Sort function for sorting agenda items by start date.
+	 *
+	 * @param agi1 - CalendarAgendaItem
+	 * @param agi2 - CalendarAgendaItem
+	 */
+	Calendar.sortAgendaItemsByStartDate = function(agi1,agi2){
+		var start1 = agi1.getStartDate();
+		var start2 = agi2.getStartDate();
+		var s = DateUtil.secondsDifferenceDirection(start1,start2);
+		if(s > 0){
+			return -1;
+		}else if(s < 0){
+			return 1;
+		}else{
+			return 0;
+		}
+	};
+	/**
 	 * Open the "more agenda items" modal dialog for the specified day.
 	 *
 	 * @param cal - Object - The Calendar object
@@ -2506,6 +2541,9 @@
 		var agi = null;
 		var agendaDiv  = null;
 		modal.append("<br>");
+		
+		agendaItems.sort(Calendar.sortAgendaItemsByStartDate);
+		
 		for(var i=0; i<agendaItems.length; i++){
 			agi = agendaItems[i];
 			agendaDiv = $("<div/>");
@@ -2563,6 +2601,120 @@
 		}
 		modal.dialog('open');				
 		
+	};
+	/**
+	 * Loads the iCal calendar data into the calendar.
+	 *
+	 * @param cal - Calendar object - A Frontier Calendar.
+	 * @param iCalUrl - URL of the ICal file.
+	 * @param responseDataType - Data type of the response data from the AJAX call, "html","xml","json","script"
+	 */
+	Calendar.loadICalSource = function(cal,iCalUrl,responseDataType){
+		if(cal == null || iCalUrl == null){
+			return;
+		}
+		// make ajax call to get ical data
+		$.ajax({
+			url: iCalUrl,
+			type: "POST",
+			data: {
+				chromeFix: ""
+			},
+			dataType: responseDataType,
+			success: function(data) {
+				if(data == null || data == ""){
+					alert("iCal load error: Returned data was null or empty string.\n\nSource, " + iCalUrl);
+					return;
+				}
+				icalParser.parseIcal(data);
+				/*				
+				All the vevent elements
+				alert("Events: " + icalParser.ical.events.length);
+				All the vtodo elements
+				alert("VToDos: " + icalParser.ical.todos.length);
+				All the journal elements
+				alert("Journals: " + icalParser.ical.journals.length);
+				All the freebusy elements
+				alert("Freebusy: " + icalParser.ical.freebusys.length);
+				*/
+				if(icalParser.ical.events.length > 0){
+					var event; var summary;
+					var startYear; var startMonth; var startDay;
+					var startHour; var startMin; var startSec;
+					var endYear; var endMonth; var endDay;
+					var endHour; var endMin; var endSec;
+					var startDt; var endDt;
+					for(var i=0; i<icalParser.ical.events.length; i++){
+						event = icalParser.ical.events[i]; 
+						summary = ((event.summary != null) ? event.summary.value : "");
+						// Example iCal date time 20100617T154500Z
+						// strip any preceeding 0's
+						startYear = ((event.dtstart != null) ? event.dtstart.value : "").substring(0,4);
+						startMonth = ((event.dtstart != null) ? event.dtstart.value : "").substring(4,6).replace(/^[0]+/g,"");
+						startDay = ((event.dtstart != null) ? event.dtstart.value : "").substring(6,8).replace(/^[0]+/g,"");
+						startHour = ((event.dtstart != null) ? event.dtstart.value : "").substring(9,11).replace(/^[0]+/g,"");
+						startMin = ((event.dtstart != null) ? event.dtstart.value : "").substring(11,13).replace(/^[0]+/g,"");
+						startSec = ((event.dtstart != null) ? event.dtstart.value : "").substring(13,15).replace(/^[0]+/g,"");
+						if(startHour == ""){ startHour = "0"; }						
+						if(startMin == ""){ startMin = "0"; }
+						if(startSec == ""){ startSec = "0"; }
+						//alert("Year: " + startYear + ", Month: " + startMonth + ", Day: " + startDay + ", Hour: " + startHour + ", Min: " + startMin + ", Sec: " + startSec);
+						endYear = ((event.dtend != null) ? event.dtend.value : "").substring(0,4);
+						endMonth = ((event.dtend != null) ? event.dtend.value : "").substring(4,6).replace(/^[0]+/g,"");
+						endDay = ((event.dtend != null) ? event.dtend.value : "").substring(6,8).replace(/^[0]+/g,"");
+						endHour = ((event.dtend != null) ? event.dtend.value : "").substring(9,11).replace(/^[0]+/g,"");
+						endMin = ((event.dtend != null) ? event.dtend.value : "").substring(11,13).replace(/^[0]+/g,"");
+						endSec = ((event.dtend != null) ? event.dtend.value : "").substring(13,15).replace(/^[0]+/g,"");
+						if(endHour == ""){ endHour = "0"; }						
+						if(endMin == ""){ endMin = "0"; }
+						if(endSec == ""){ endSec = "0"; }						
+						startDt = new Date(parseInt(startYear),parseInt(startMonth)-1,parseInt(startDay),parseInt(startHour)-1,parseInt(startMin),parseInt(startSec),0);
+						endDt = new Date(parseInt(endYear),parseInt(endMonth)-1,parseInt(endDay),parseInt(endHour)-1,parseInt(endMin),parseInt(endSec),0);
+						if(DateUtil.secondsDifferenceDirection(startDt,endDt) >= 0){
+							// continue if start date is before or on end date
+							var hashData = new Hashtable();
+							hashData.put('UID',((event.uid != null) ? event.uid.value : ""));
+							hashData.put('SUMMARY',((event.summary != null) ? event.summary.value : ""));
+							hashData.put('DTSTART',((event.dtstart != null) ? event.dtstart.value : ""));
+							hashData.put('DTEND',((event.dtend != null) ? event.dtend.value : ""));
+							hashData.put('CLASS',((event.classification != null) ? event.classification.value : ""));
+							hashData.put('CREATED',((event.created != null) ? event.created.value : ""));
+							hashData.put('DESCRIPTION',((event.description != null) ? event.description.value : ""));
+							hashData.put('GEO',((event.geo != null) ? event.geo.value : ""));
+							hashData.put('LAST-MODIFIED',((event.lastmod != null) ? event.lastmod.value : ""));
+							hashData.put('LOCATION',((event.location != null) ? event.location.value : ""));
+							hashData.put('ORGANIZER',((event.organizer != null) ? event.organizer.value : ""));
+							hashData.put('PRIORITY',((event.priority != null) ? event.priority.value : ""));
+							hashData.put('DTSTAMP',((event.dtstamp != null) ? event.dtstamp.value : ""));
+							hashData.put('SEQUENCE',((event.seq != null) ? event.seq.value : ""));
+							hashData.put('STATUS',((event.status != null) ? event.status.value : ""));
+							hashData.put('TRANSP',((event.transp != null) ? event.transp.value : ""));
+							hashData.put('URL',((event.url != null) ? event.url.value : ""));
+							hashData.put('RECURRENCE-ID',((event.recurid != null) ? event.recurid.value : ""));
+							hashData.put('DURATION',((event.duration != null) ? event.duration.value : ""));
+							hashData.put('ATTACH',((event.attach != null) ? event.attach.value : ""));
+							hashData.put('ATTENDEE',((event.attendee != null) ? event.attendee.value : ""));
+							hashData.put('CATEGORIES',((event.categories != null) ? event.categories.value : ""));
+							hashData.put('COMMENT',((event.comment != null) ? event.comment.value : ""));
+							hashData.put('CONTACT',((event.contact != null) ? event.contact.value : ""));
+							hashData.put('EXDATE',((event.exdate != null) ? event.exdate.value : ""));
+							hashData.put('EXRULE',((event.exrule != null) ? event.exrule.value : ""));
+							hashData.put('REQUEST-STATUS',((event.rstatus != null) ? event.rstatus.value : ""));
+							hashData.put('RELATED',((event.related != null) ? event.related.value : ""));
+							hashData.put('RESOURCES',((event.resources != null) ? event.resources.value : ""));
+							hashData.put('RDATE',((event.rdate != null) ? event.rdate.value : ""));
+							hashData.put('RRULE',((event.rrule != null) ? event.rrule.value : ""));
+							hashData.put('X-',((event.xprop != null) ? event.xprop.value : ""));
+							var agi = new CalendarAgendaItem(summary,startDt,endDt,hashData);
+							cal.addAgendaItem(agi);
+						}			
+					}
+				}	
+			},
+			error: function(request,status,errorThrown) {
+				alert("iCal load error: Failure in requesting " + iCalUrl + ": " + errorThrown);
+			}
+		});		
 	};	
 	
 	/**
@@ -2578,6 +2730,7 @@
 	 * @return integer 0-31
 	 */
 	DateUtil.getDaysInMonth = function(date){
+		/*
 		var dt = new Date(date.getFullYear(),date.getMonth(),1,0,0,0,0);
 		var month = dt.getMonth();
 		var lastMonth = month;
@@ -2588,6 +2741,8 @@
 			month = dt.getMonth();
 		}
 		return dayCount;
+		*/
+		return 32 - new Date(date.getFullYear(), date.getMonth(), 32).getDate();
 	};
 	/**
          * Check if date1 is between date2 & date3, or on date2 and date3. 
@@ -2641,18 +2796,11 @@
 	 * @return integer - The days different
 	 */
 	DateUtil.daysDifferenceDirection = function(date1,date2) {
-		// The number of milliseconds in one day
-		var ONE_DAY = 1000 * 60 * 60 * 24;
 		// create new dates so we ignore all hour, min, sec, and milli data
 		var dt1 = new Date(date1.getFullYear(),date1.getMonth(),date1.getDate(),0,0,0,0);
-		var dt2 = new Date(date2.getFullYear(),date2.getMonth(),date2.getDate(),0,0,0,0);	
-		// Convert both dates to milliseconds
-		var date1_ms = dt1.getTime();
-		var date2_ms = dt2.getTime();
-		// Calculate the difference in milliseconds
-		var difference_ms = date2_ms - date1_ms;
-		var diff_day = difference_ms/ONE_DAY;
-		return diff_day;
+		var dt2 = new Date(date2.getFullYear(),date2.getMonth(),date2.getDate(),0,0,0,0);
+		// 1000 * 60 * 60 * 24 = number of milliseconds in one day
+		return (dt2.getTime() - dt1.getTime()) / (1000 * 60 * 60 * 24);
 	};
 	/**
 	 * Get seconds difference between date 1 and 2.
@@ -2661,15 +2809,7 @@
 	 *					 date1 < date2, or 0 if same second.
 	 */
 	DateUtil.secondsDifferenceDirection = function(date1,date2) {
-		// The number of milliseconds in one second
-		var ONE_SEC = 1000;
-		// Convert both dates to milliseconds
-		var date1_ms = date1.getTime();
-		var date2_ms = date2.getTime();
-		// Calculate the difference in milliseconds
-		var difference_ms = date2_ms - date1_ms;
-		// Convert back to seconds and return
-		return Math.round(difference_ms/ONE_SEC);
+		return Math.round((date2.getTime() - date1.getTime()) / 1000);
 	};	
 	/**
 	 * Given a Date object with the year, month, and day set, this function will
@@ -2897,7 +3037,7 @@
 	 */
 	LogUtil.log = function(s){
 		//console.log((new Date()).toLocaleTimeString() + ": " + s);
-	};	
+	};
 	
 	/**
 	 * Extend JQuery and and add our function.
@@ -2952,7 +3092,7 @@
 		}	
 		
 		// instantiate instance of plugin and initialize it for all matching elements.
-        return this.each(function() {
+        	return this.each(function() {
 		
 			var calElm = $(this);
 			
@@ -2976,7 +3116,7 @@
 			// Store plugin object in this element's data so the user can access it in their code
 			calElm.data('plugin', myplugin);
 			
-        });		
+        	});		
 
 	};	
 	
@@ -3178,7 +3318,7 @@
 		 * endDate   = The date the agenda item ends
 		 * data      = This is the data object that was optionally passed in to the jFrontierCal.addAgendaItem() function
 		 *             when you created the agenda item. Whatever data you passed in will be in this object.
-         *			   e.g. {var1: "some data", var2: "more data", var3: "etc..."}
+         	 *			   e.g. {var1: "some data", var2: "more data", var3: "etc..."}
 		 *
 		 */
 		this.getAgendaItemById = function(calId,agendaId){
@@ -3381,7 +3521,22 @@
 					calObj.setRenderRatio(ratio);
 				}
 			}
-		};		
+		};
+
+		/**
+		 * Performs an AJAX call to retrieve the iCal data at the specified URL and attempts to load the iCal data into the calendar.
+		 *
+		 * @param calId - (String) - The ID of the calendar </div> element.
+		 * @param iCalUrl -(String) - URL for the iCal data.
+		 * @param responseDataType - Data type of the response data, "html","xml","json","script"
+		 */
+		this.loadICalSource = function(calId,iCalUrl,responseDataType){
+			if(calId != null && iCalUrl != null){
+				calId = stripNumberSign(calId);
+				var calObj = myCalendars.get(calId);
+				Calendar.loadICalSource(calObj,iCalUrl,responseDataType);
+			}
+		};
 		
 		/**
 		 *
@@ -3460,6 +3615,222 @@
 		}
 
 	};
+
+	/**
+	 * iCal parser.
+	 * http://code.google.com/p/ijp/
+	 */
+	var icalParser = {
+
+		ical:{
+			version:'',
+			prodid:'',
+			events:[],
+			todos:[],
+			journals:[],
+			freebusys:[]
+		},
+		test: function(){
+			alert("icalParser test is good!");
+		},
+		parseIcal: function(icsString){
+
+			this.ical.version=this.getValue('VERSION',icsString,false);
+			this.ical.prodid=this.getValue('PRODID',icsString,false);
+		
+			var reg=/BEGIN:VEVENT(\r?\n[^B].*)+/g;
+			var matches=icsString.match(reg);
+			if(matches){
+				for(i=0;i<matches.length;i++){
+					this.parseVevent(matches[i]);
+				}
+			}
+			reg=/BEGIN:VTODO(\r?\n[^B].*)+/g;
+
+			matches=icsString.match(reg);
+			if(matches){
+				for(i=0;i<matches.length;i++){
+					this.parseVtodo(matches[i]);
+				}
+			}
+			reg=/BEGIN:VJOURNAL(\r?\n[^B].*)+/g;
+			matches=icsString.match(reg);
+			if(matches){
+				for(i=0;i<matches.length;i++){
+					this.parseVjournal(matches[i]);
+				}
+			}
+			reg=/BEGIN:VFREEBUSY(\r?\n[^B].*)+/g;
+			matches=icsString.match(reg);
+			if(matches){
+				for(i=0;i<matches.length;i++){
+					this.parseVfreebusy(matches[i]);
+				}
+			}
+		},
+		parseVfreebusy: function(vfreeString){
+			var freebusy={
+				contact:this.getValue('CONTACT',vfreeString,false), //
+				dtstart:this.getValue('DTSTART',veventString,false), //This property specifies when the calendar component begins.
+				dtend:this.getValue('DTEND',veventString,false), //This property specifies when the calendar component ends.
+				duration:this.getValue('DURATION',vfreeString,false), //
+				description:this.getValue('DESCRIPTION',vfreeString,false), //This property provides a more complete description of the calendar component, than that provided by the "SUMMARY" property.
+				dtstamp:this.getValue('DTSTAMP',vfreeString,false), //The property indicates the date/time that the instance of the iCalendar object was created.
+				organizer:this.getValue('ORGANIZER',vfreeString,false), //The property defines the organizer for a calendar component.
+				uid:this.getValue('UID',vfreeString,false), //This property defines the persistent, globally unique identifier for the calendar component.
+				url:this.getValue('URL',vfreeString,false), //This property defines a Uniform Resource Locator (URL) associated with the iCalendar object.
+				attendee:this.getValue('ATTENDEE',vfreeString,true), //The property defines an "Attendee" within a calendar component.
+				comment:this.getValue('COMMENT',vfreeString,true), //This property specifies non-processing information intended to provide a comment to the calendar user.			
+				freebusy:this.getValue('FREEBUSY',vfreeString,true), //The property defines one or more free or busy time intervals.
+				rstatus:this.getValue('REQUEST-STATUS',vfreeString,true), //This property defines the status code returned for a scheduling request.			
+				xprop:this.getValue('X-',vfreeString,true)
+			};
+			this.ical.freebusys[this.ical.freebusys.length]=freebusy;
+		},
+		parseVjournal: function(vjournalString){
+			var journal={
+				classification:this.getValue('CLASS',vjournalString,false), //This property defines the access classification for a calendar component.
+				created:this.getValue('CREATED',vjournalString,false), //This property specifies the date and time that the calendar information was created by the calendar user agent in the calendar store.
+				description:this.getValue('DESCRIPTION',vjournalString,false), //This property provides a more complete description of the calendar component, than that provided by the "SUMMARY" property.
+				dtstart:this.getValue('DTSTART',veventString,false), //This property specifies when the calendar component begins.
+				dtstamp:this.getValue('DTSTAMP',vjournalString,false), //The property indicates the date/time that the instance of the iCalendar object was created.
+				lastmod:this.getValue('LAST-MODIFIED',vjournalString,false), //The property specifies the date and time that the information associated with the calendar component was last revised in the calendar store.
+				organizer:this.getValue('ORGANIZER',vjournalString,false), //The property defines the organizer for a calendar component.
+				recurid:this.getValue('RECURRENCE-ID',vjournalString,false), //This property is used in conjunction with the "UID" and "SEQUENCE" property to identify a specific instance of a recurring "VEVENT", "VTODO" or "VJOURNAL" calendar component. The property value is the effective value of the "DTSTART" property of the recurrence instance.
+				seq:this.getValue('SEQUENCE',vjournalString,false), //This property defines the revision sequence number of the calendar component within a sequence of revisions.
+				status:this.getValue('STATUS',vjournalString,false), //This property defines the overall status or confirmation for the calendar component.
+				summary:this.getValue('SUMMARY',vjournalString,false), //This property defines a short summary or subject for the calendar component.
+				uid:this.getValue('UID',vjournalString,false), //This property defines the persistent, globally unique identifier for the calendar component.
+				url:this.getValue('URL',vjournalString,false), //This property defines a Uniform Resource Locator (URL) associated with the iCalendar object.
+				attach:this.getValue('ATTACH',vjournalString,true), //The property provides the capability to associate a document object with a calendar component.
+				attendee:this.getValue('ATTENDEE',vjournalString,true), //The property defines an "Attendee" within a calendar component.
+				categories:this.getValue('CATEGORIES',vjournalString,true), //This property defines the categories for a calendar component.
+				comment:this.getValue('COMMENT',vjournalString,true), //This property specifies non-processing information intended to provide a comment to the calendar user.			
+				contact:this.getValue('CONTACT',vjournalString,true), //The property is used to represent contact information or alternately a reference to contact information associated with the calendar component.
+				exdate:this.getValue('EXDATE',vjournalString,true), //This property defines the list of date/time exceptions for a recurring calendar component.
+				exrule:this.getValue('EXRULE',vjournalString,true), //This property defines a rule or repeating pattern for an exception to a recurrence set.
+				related:this.getValue('RELATED',vjournalString,true), //To specify the relationship of the alarm trigger with respect to the start or end of the calendar component.
+				rdate:this.getValue('RDATE',vjournalString,true), //This property defines the list of date/times for a recurrence set.
+				rrule:this.getValue('RRULE',vjournalString,true), //This property defines a rule or repeating pattern for recurring events, to-dos, or time zone definitions.
+				rstatus:this.getValue('REQUEST-STATUS',vjournalString,true), //This property defines the status code returned for a scheduling request.			
+				xprop:this.getValue('X-',vjournalString,true)
+			};
+			this.ical.journals[this.ical.journals.length]=journal;
+		},
+		parseVtodo: function(vtodoString){
+			var todo={
+				classification:this.getValue('CLASS',vtodoString,false), //This property defines the access classification for a calendar component.
+				completed:this.getValue('COMPLETED',vtodoString,false), //This property defines the date and time that a to-do was actually completed.
+				created:this.getValue('CREATED',vtodoString), //This property specifies the date and time that the calendar information was created by the calendar user agent in the calendar store.
+				description:this.getValue('DESCRIPTION',vtodoString,false), //This property provides a more complete description of the calendar component, than that provided by the "SUMMARY" property.
+				dtstamp:this.getValue('DTSTAMP',vtodoString,false), //The property indicates the date/time that the instance of the iCalendar object was created.
+				geo:this.getValue('GEO',vtodoString,false), //This property specifies information related to the global position for the activity specified by a calendar component.
+				lastmod:this.getValue('LAST-MODIFIED',vtodoString,false), //The property specifies the date and time that the information associated with the calendar component was last revised in the calendar store.
+				location:this.getValue('LOCATION',vtodoString,false), //The property defines the intended venue for the activity defined by a calendar component.
+				organizer:this.getValue('ORGANIZER',vtodoString,false), //The property defines the organizer for a calendar component.
+				percent:this.getValue('PERCENT-COMPLETE',vtodoString,false), //This property is used by an assignee or delegatee of a to-do to convey the percent completion of a to-do to the Organizer.
+				priority:this.getValue('PRIORITY',vtodoString,false), //The property defines the relative priority for a calendar component.
+				recurid:this.getValue('RECURRENCE-ID',vtodoString,false), //This property is used in conjunction with the "UID" and "SEQUENCE" property to identify a specific instance of a recurring "VEVENT", "VTODO" or "VJOURNAL" calendar component. The property value is the effective value of the "DTSTART" property of the recurrence instance.
+				seq:this.getValue('SEQUENCE',vtodoString,false), //This property defines the revision sequence number of the calendar component within a sequence of revisions.
+				status:this.getValue('STATUS',vtodoString,false), //This property defines the overall status or confirmation for the calendar component.
+				summary:this.getValue('SUMMARY',vtodoString,false), //This property defines a short summary or subject for the calendar component.
+				uid:this.getValue('UID',vtodoString,false), //This property defines the persistent, globally unique identifier for the calendar component.
+				url:this.getValue('URL',vtodoString,false), //This property defines a Uniform Resource Locator (URL) associated with the iCalendar object.
+				due:this.getValue('DUE',vtodoString,false), //This property defines the date and time that a to-do is expected to be completed.
+				duration:this.getValue('DURATION',vtodoString,false), //The property specifies a positive duration of time.
+				attach:this.getValue('ATTACH',vtodoString,true), //The property provides the capability to associate a document object with a calendar component.
+				attendee:this.getValue('ATTENDEE',vtodoString,true), //The property defines an "Attendee" within a calendar component.
+				categories:this.getValue('CATEGORIES',vtodoString,true), //This property defines the categories for a calendar component.
+				comment:this.getValue('COMMENT',vtodoString,true), //This property specifies non-processing information intended to provide a comment to the calendar user.			
+				contact:this.getValue('CONTACT',vtodoString,true), //The property is used to represent contact information or alternately a reference to contact information associated with the calendar component.
+				exdate:this.getValue('EXDATE',vtodoString,true), //This property defines the list of date/time exceptions for a recurring calendar component.
+				exrule:this.getValue('EXRULE',vtodoString,true), //This property defines a rule or repeating pattern for an exception to a recurrence set.
+				rstatus:this.getValue('REQUEST-STATUS',vtodoString,true), //This property defines the status code returned for a scheduling request.			
+				related:this.getValue('RELATED',vtodoString,true), //To specify the relationship of the alarm trigger with respect to the start or end of the calendar component.
+				resources:this.getValue('RESOURCES',vtodoString,true), //This property defines the equipment or resources anticipated for an activity specified by a calendar entity..
+				rdate:this.getValue('RDATE',vtodoString,true), //This property defines the list of date/times for a recurrence set.
+				rrule:this.getValue('RRULE',vtodoString,true), //This property defines a rule or repeating pattern for recurring events, to-dos, or time zone definitions.
+				xprop:this.getValue('X-',vtodoString,true)
+			};
+			this.ical.todos[this.ical.todos.length]=todo;
+		},
+		parseVevent: function(veventString){
+			
+			var event={
+				classification:this.getValue('CLASS',veventString,false), //This property defines the access classification for a calendar component.
+				created:this.getValue('CREATED',veventString,false), //This property specifies the date and time that the calendar information was created by the calendar user agent in the calendar store.
+				description:this.getValue('DESCRIPTION',veventString,false), //This property provides a more complete description of the calendar component, than that provided by the "SUMMARY" property.
+				geo:this.getValue('GEO',veventString,false), //This property specifies information related to the global position for the activity specified by a calendar component.
+				lastmod:this.getValue('LAST-MODIFIED',veventString,false), //The property specifies the date and time that the information associated with the calendar component was last revised in the calendar store.
+				location:this.getValue('LOCATION',veventString,false), //The property defines the intended venue for the activity defined by a calendar component.
+				organizer:this.getValue('ORGANIZER',veventString,false), //The property defines the organizer for a calendar component.
+				priority:this.getValue('PRIORITY',veventString,false), //The property defines the relative priority for a calendar component.
+				dtstamp:this.getValue('DTSTAMP',veventString,false), //The property indicates the date/time that the instance of the iCalendar object was created.
+				seq:this.getValue('SEQUENCE',veventString,false), //This property defines the revision sequence number of the calendar component within a sequence of revisions.
+				status:this.getValue('STATUS',veventString,false), //This property defines the overall status or confirmation for the calendar component.
+				transp:this.getValue('TRANSP',veventString,false), //This property defines whether an event is transparent or not to busy time searches.
+				url:this.getValue('URL',veventString,false), //This property defines a Uniform Resource Locator (URL) associated with the iCalendar object.
+				recurid:this.getValue('RECURRENCE-ID',veventString,false), //This property is used in conjunction with the "UID" and "SEQUENCE" property to identify a specific instance of a recurring "VEVENT", "VTODO" or "VJOURNAL" calendar component. The property value is the effective value of the "DTSTART" property of the recurrence instance.
+				duration:this.getValue('DURATION',veventString,false), //The property specifies a positive duration of time.
+				attach:this.getValue('ATTACH',veventString,true), //The property provides the capability to associate a document object with a calendar component.
+				attendee:this.getValue('ATTENDEE',veventString,true), //The property defines an "Attendee" within a calendar component.
+				categories:this.getValue('CATEGORIES',veventString,true), //This property defines the categories for a calendar component.
+				comment:this.getValue('COMMENT',veventString,true), //This property specifies non-processing information intended to provide a comment to the calendar user.			
+				contact:this.getValue('CONTACT',veventString,true), //The property is used to represent contact information or alternately a reference to contact information associated with the calendar component.
+				exdate:this.getValue('EXDATE',veventString,true), //This property defines the list of date/time exceptions for a recurring calendar component.
+				exrule:this.getValue('EXRULE',veventString,true), //This property defines a rule or repeating pattern for an exception to a recurrence set.
+				rstatus:this.getValue('REQUEST-STATUS',veventString,true), //This property defines the status code returned for a scheduling request.			
+				related:this.getValue('RELATED',veventString,true), //To specify the relationship of the alarm trigger with respect to the start or end of the calendar component.
+				resources:this.getValue('RESOURCES',veventString,true), //This property defines the equipment or resources anticipated for an activity specified by a calendar entity..
+				rdate:this.getValue('RDATE',veventString,true), //This property defines the list of date/times for a recurrence set.
+				rrule:this.getValue('RRULE',veventString,true), //This property defines a rule or repeating pattern for recurring events, to-dos, or time zone definitions.
+				xprop:this.getValue('X-',veventString,true), //
+				uid:this.getValue('UID',veventString,false), //This property defines the persistent, globally unique identifier for the calendar component.
+				summary:this.getValue('SUMMARY',veventString,false), //This property defines a short summary or subject for the calendar component.
+				dtstart:this.getValue('DTSTART',veventString,false), //This property specifies when the calendar component begins.
+				dtend:this.getValue('DTEND',veventString,false) //This property specifies the date and time that a calendar component ends.
+			};
+			this.ical.events[this.ical.events.length]=event;
+			
+		},
+		getValue: function(propName,txt,multiple){
+			if(multiple){
+				eval('var matches=txt.match(/\\n'+propName+'[^:]*/g)');
+				var props=[];
+				if(matches){
+					for(l=0;l<matches.length;l++){
+						//on enleve les parametres 
+						matches[l]=matches[l].replace(/;.*/,'');
+						props[props.length]=this.getValue(matches[l],txt);
+					}
+					return props;
+				}
+			}else{
+				var reg=new RegExp('('+propName+')(;[^=]*=[^;:\n]*)*:([^\n]*)','g');
+				var matches=reg.exec(txt);
+				if(matches){ //on a trouvé la propriété cherchée
+					var valeur=RegExp.$3;
+					var tab_params;
+					if(RegExp.$2.length>0){ //il y a des paramètres associés
+						var params=RegExp.$2.substr(1).split(';');
+						var pair;var code='';
+						for(k=0;k<params.length;k++){
+							pair=params[k].split('=');
+							if(!pair[1]) pair[1]=pair[0];
+							code+=pair[0].replace(/-/,'')+' : "'+pair[1]+'", '; 
+						}
+						eval('tab_params=( { '+code.substr(0,code.length-2)+' } );');
+					}
+					return {
+						value:valeur,
+						params:tab_params
+					};
+				}else{
+					return null;
+				}
+			}
+		}
+	}
 		
 })(jQuery);
 
