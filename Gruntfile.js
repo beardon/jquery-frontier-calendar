@@ -6,9 +6,15 @@ module.exports = function (grunt) {
             options: {
                 banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
             },
-            build: {
-                src: '<%= pkg.name %>.js',
-                dest: '<%= pkg.name %>.min.js'
+            my_target: {
+                files: [{
+                    expand: true,
+                    flatten: true,
+                    ext: '.min.js',
+                    extDot: 'last',
+                    src: '<%= pkg.main %>',
+                    dest: './js/frontierCalendar'
+                }]
             }
         }
     });

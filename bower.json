@@ -28,13 +28,28 @@
     "gcal"
   ],
   "authors": [
-    { "name": "Seth Lenzi", "email": "slenzi@gmail.com", "homepage": "https://github.com/slenzi" },
-    { "name": "Veronica Powers", "email": "veronica.powers@beardon.com", "homepage": "https://github.com/veronicapowersbeardon" },
-    { "name": "Aaron Bean", "email": "aaron.bean@beardon.com", "homepage": "https://github.com/aaronbean" }
+    {
+      "name": "Seth Lenzi",
+      "email": "slenzi@gmail.com",
+      "homepage": "https://github.com/slenzi"
+    },
+    {
+      "name": "Veronica Powers",
+      "email": "veronica.powers@beardon.com",
+      "homepage": "https://github.com/veronicapowersbeardon"
+    },
+    {
+      "name": "Aaron Bean",
+      "email": "aaron.bean@beardon.com",
+      "homepage": "https://github.com/aaronbean"
+    }
   ],
   "homepage": "https://github.com/beardon/jquery-frontier-calendar",
   "repository": {
     "type": "git",
     "url": "git://github.com/beardon/jquery-frontier-calendar.git"
+  },
+  "dependencies": {
+    "jquery-ui": "~1.11.2"
   }
 }
