@@ -1,15 +1,18 @@
 /**
  * Frontier JQuery Full Calendar Plugin.
  *
- * June 17, 2010 - v1.2 - Drag-and-drop, css updates, allDay event option, addAgendaItem and initialization functions changed. 
- * June 14, 2010 - v1.1 - Second release. Few bug fixes, tweaks, and basic VEVENT ical support.
- * June 9, 2010  - v1.0 - Initial version.
+ * June 22, 2010 - v1.3 - Tooltip support. Additional callbacks, applyAgendaTooltipCallback, agendaDragStartCallback, 
+ *						  and agendaDragStopCallback.
+ * June 17, 2010 - v1.2 - Drag-and-drop, CSS updates, allDay event option.
+ * June 14, 2010 - v1.1 - Few bug fixes, tweaks, and basic VEVENT ical support.
+ * June 09, 2010 - v1.0 - Initial version.
  *
  * Seth Lenzi
  * slenzi@gmail.com
- * lenzi@jimmy.harvard.edu
  *
  * This plugin is free. Do with it as you want. I claim no responsibility if it explodes and ruins your day. ;)
+ *
+ * MIT License - http://en.wikipedia.org/wiki/MIT_License
  *
  * Dependencies:
  *
@@ -17,8 +20,8 @@
  *
  * 1) JQuery Core and JQuery UI.
  *    For IE you need to use the inlcuded modified version of jQuery Core, js/jquery-core/jquery-1.4.2-ie-fix.min.js for drag-and-drop.
- *    Drag-and-drop works fine in Chrome, Opera, Firefox, and Safari using unmodified jQuery core. For more infor read the txt file
- *    at js/jquery-core/README-IE-FIX.TXT
+ *    Drag-and-drop works fine in Chrome, Opera, Firefox, and Safari using unmodified jQuery core. For more info read the txt file
+ *    that should have been included with this plugin at js/jquery-core/README-IE-FIX.TXT
  *    http://jquery.com/
  *    http://jqueryui.com   
  *
@@ -945,6 +948,14 @@
 		this.clickEvent_agendaCell = null;
 		// the callback function that's triggered when users drop an agenda div element into a day cell (drag-and-drop)
 		this.dropEvent_agendaCell = null;
+		// the callback function that's triggered when users mouse oever an agenda div item
+		this.mouseOverEvent_agendaCell = null;
+		// optional callback where users can apply a tooltip to the agenda item div element
+		this.callBack_agendaTooltip = null;
+		// the callback function that's triggered when a drag event starts on an agenda div element.
+		this.dragStart_agendaCell = null;
+		// the callback function that's triggered when a drag event stops on an agenda div element.
+		this.dragStop_agendaCell = null;		
 
 		// each CalendarAgendaitem added to this calendar gets an ID. We'll increment this ID for each agendar item added.
 		this.agendaId = 1;
@@ -966,10 +977,24 @@
 		 * @param date - A datejs Date object. The calendar will be set to the year and month of the date.
 		 * @param dayCellClickHandler - A Function that's triggered when users click a day cell div element.
 		 * @param agendaCellClickHandler - A Function that's triggered when users click an agenda div element
-		 * @param agendaCellDropHandler - A Function that's triggered when users drop an agenda div element into a day cell div element (drag-and-drop)
+		 * @param agendaCellDropHandler - A Function that's triggered when users drop an agenda div element into a day cell div element.
 		 * @param dragAndDrop - boolean - True to enable dra-and-drop, false to disable.
+		 * @param agendaCellMouseoverHandler - A Function that's triggered when users mouse over an agenda div element.
+		 * @param agendaTooltipHandler - A callabck function where users can apply their tooltip to the agenda div elements.
+		 * @param agendaCellDragStartHandler - A Function that's triggered when a drag event starts on an agenda div element.
+		 * @param agendaCellDragStopHandler - A Function that's triggered when a drag event stops on an agenda div element.
 		 */
-		this.initialize = function(calElm,date,dayCellClickHandler,agendaCellClickHandler,agendaCellDropHandler,dragAndDrop){
+		this.initialize = function(
+			calElm,
+			date,
+			dayCellClickHandler,
+			agendaCellClickHandler,
+			agendaCellDropHandler,
+			dragAndDrop,
+			agendaCellMouseoverHandler,
+			agendaTooltipHandler,
+			agendaCellDragStartHandler,
+			agendaCellDragStopHandler){
 			
 			this.jqyObj = calElm;
 			this.displayDate = date;
@@ -977,6 +1002,10 @@
 			this.clickEvent_agendaCell = agendaCellClickHandler;
 			this.dropEvent_agendaCell = agendaCellDropHandler;
 			this.dragAndDropEnabled = dragAndDrop;
+			this.mouseOverEvent_agendaCell = agendaCellMouseoverHandler;
+			this.callBack_agendaTooltip = agendaTooltipHandler;
+			this.dragStart_agendaCell = agendaCellDragStartHandler;
+			this.dragStop_agendaCell = agendaCellDragStopHandler;			
 			
 			this.do_init();
 			
@@ -1538,22 +1567,70 @@
 				d.data("agendaId",agi.getAgendaId());
 				// item is draggble and will revert to it's original position if not dropped into a valid droppable (another day cell)
 				if(this.dragAndDropEnabled){
+					d.bind(
+						"drag",
+						function(event, ui) {
+							// do something when dragging
+						}
+					);
+					d.bind(
+						"dragstart",
+						{
+							agendaDivElement: d,
+							agendaId: agi.getAgendaId(),
+							agendaItem: Calendar.buildUserAgendaObject(agi),
+							callBack: this.dragStart_agendaCell
+						},						
+						function(event, ui) {
+							var callBack = event.data.callBack;
+							if(callBack != null){
+								callBack(
+									event,
+									event.data.agendaDivElement,
+									event.data.agendaItem
+								);
+							}
+						}
+					);
+					d.bind(
+						"dragstop",
+						{
+							agendaDivElement: d,
+							agendaId: agi.getAgendaId(),
+							agendaItem: Calendar.buildUserAgendaObject(agi),
+							callBack: this.dragStop_agendaCell
+						},						
+						function(event, ui) {
+							var callBack = event.data.callBack;
+							if(callBack != null){
+								callBack(
+									event,
+									event.data.agendaDivElement,
+									event.data.agendaItem
+								);
+							}
+						}
+					);						
+					d.draggable("enable");
+					d.data("agendaDivElement",d);
+					d.data("agendaId",agi.getAgendaId());
+					d.data("agendaItem", Calendar.buildUserAgendaObject(agi));
+					d.data("revertCallBack",this.callBack_agendaTooltip);
 					d.draggable({ 
-						start: function(event, ui) {
-							// do something when dragging starts.
-							//var agendaDiv = $(this);
-							//alert("Dragging started on agenda div: " + agendaDiv.data("agendaId"));
-						},
-						stop: function(event, ui) {
-							// do something when dragging ends.
-							//var agendaDiv = $(this);
-							//alert("Dragging ended on agenda div: " + agendaDiv.data("agendaId"));
-						},
-						drag: function(event, ui) {	
-							// do something while dragging.
-						},
-						revert: 'invalid'
-					});				
+						revert: function(event,ui){
+							var callBack = $(this).data("revertCallBack");
+							var agendaDiv = $(this).data("agendaDivElement");
+							var agendaItem = $(this).data("agendaItem");
+							if(callBack != null){
+								callBack(
+									agendaDiv,
+									agendaItem
+								);
+							}
+							return true;
+						},						
+						scroll: true
+					});
 				}
 				d.addClass("JFrontierCal-Agenda-Item");
 				if(agi.getBackgroundColor() != null){
@@ -1608,7 +1685,20 @@
 						},						
 						this.clickAgendaFromCalendarHandler
 					);
-				}			
+				}
+				// add mouse over event listener
+				if(this.mouseOverEvent_agendaCell != null){
+					d.bind(
+						'mouseover',
+						{
+							// pass agenda ID so user will have access to it in their custom click callback function
+							agendaId: agi.getAgendaId(),
+							// pass mouseover event callback function so we can call it in mouseOverAgendaFromCalendarHandler() function
+							callBack: this.mouseOverEvent_agendaCell
+						},						
+						this.clickAgendaFromCalendarHandler
+					);				
+				}
 				// change mouse cusor to pointer when hovering over agenda divs.
 				d.hover(
 					function() {
@@ -1618,6 +1708,11 @@
 						$(this).css('cursor','auto');
 					}
 				);
+				// call the users custom tooltip function if they provided one. pass the agenda item div element so they have access to it,
+				// add pass the user a agenda item object so they have access to the data.
+				if(this.callBack_agendaTooltip){
+					this.callBack_agendaTooltip(d,Calendar.buildUserAgendaObject(agi));
+				}
 	
 				// add agenda <div> to all day cells.
 				this.addAgendaDivToDays(startDayObject,endDayObject,d,agi.getAgendaId());
@@ -1641,7 +1736,7 @@
 		 * @param eventObj - The event object from the click event. Should have the following values in its data.
 		 *					 eventObj.data.callBack - The users custom click event callback function.
 		 *					 eventObj.data.agendaId - The ID of the agenda item that was clicked.
-	     *
+		 *
 		 */
 		this.clickAgendaFromCalendarHandler = function(eventObj){
 			eventObj.stopPropagation();
@@ -1653,13 +1748,25 @@
 		};
 		
 		/**
+		 * Fired when users mouse over and agenda item on the calendar.
+		 */
+		this.mouseOverAgendaFromCalendarHandler = function(eventObj){
+			//eventObj.stopPropagation();
+			var callBack = eventObj.data.callBack;
+			if(callBack != null){
+				// pass eventObj to the users click handler. they will have access to the agenda ID (eventObj.data.agendaId)
+				callBack(eventObj);
+			}		
+		};
+		
+		/**
 		 * Fired when users click and agenda item from the "more agenda items" modal dialog.
 		 * This function closes the dialog, then it calls this.clickAgendaFromCalendarHandler()
 		 *
 		 * @param eventObj - The event object from the click event. Should have the following values in its data.
 		 *					 eventObj.data.callBack - The users custom click event callback function.
 		 *					 eventObj.data.agendaId - The ID of the agenda item that was clicked.
-         *					 eventObj.data.dialog - Reference to the "more agenda items" modal dialog.		 
+		 *					 eventObj.data.dialog - Reference to the "more agenda items" modal dialog.		 
 		 */
 		this.clickAgendaFromCalendarMoreModalDialogHandler = function(eventObj){
 			// close the "more" dialog
@@ -1730,6 +1837,7 @@
 				
 				//event.data.cal = null; // remove calendar object from event.
 				event.data.agendaId = agendaId; // add agenda ID to event so user has access to it.
+				event.data.calDayDate = toStartDate; // add date that the agenda item was dropped to.
 				
 				// call users drop handler
 				if(calObj.dropEvent_agendaCell != null){
@@ -1738,7 +1846,7 @@
 				
 			});
 			
-			eventObj.stopPropagation();
+			event.stopPropagation();
 		
 		};		
 
@@ -2759,6 +2867,62 @@
 		}
 	};
 	/**
+	 * Converts an internal CalendarAgendaItem object to a new javascript agenda object that
+	 * we can pass back to the user. We do this because we don't want the user to have access
+	 * the full CalendarAgendaItem object.
+	 *
+	 * @param agendaObject - A CalendarAgendaItem object.
+	 *
+	 * @return An object with the following specification.
+	 * {
+	 *     agendaId: [integer],
+	 *     title: [string]
+	 *     startDate: [Date],
+	 *     endDate: [Date],
+	 *	   allDay: [boolean],
+	 *	   data: {
+	 *			key1: [value1],
+	 *          key2: [value2],
+	 *          etc...
+	 *     },
+	 *     displayProp: {
+	 *			backgroundColor: [string],
+	 *			foregroundColor: [string]
+	 *	   }
+	 * }	 
+	 */
+	Calendar.buildUserAgendaObject = function(agendaObject){
+		if(agendaObject == null){
+			return null;
+		}
+		var dataObj = null;
+		var agendaItemHashData = agendaObject.getAgendaDataHash();
+		if(agendaItemHashData != null && agendaItemHashData.size() > 0){
+			dataObj = new Object();
+			var key = null;
+			var val = null;
+			var keyArray = agendaItemHashData.keys();
+			for(var keyIndex=0; keyIndex<keyArray.length; keyIndex++){
+				key = keyArray[keyIndex];
+				val = agendaItemHashData.get(key);
+				dataObj[key] = val;
+			}
+		}
+		var displayPropObj = new Object();
+		displayPropObj["backgroundColor"] = agendaObject.getBackgroundColor();
+		displayPropObj["foregroundColor"] = agendaObject.getForegroundColor();		
+		var agendaData = {
+			agendaId: agendaObject.getAgendaId(),
+			title: agendaObject.getTitle(),
+			startDate: agendaObject.getStartDate(),
+			endDate: agendaObject.getEndDate(),
+			allDay: ((agendaObject.isAllDay()) ? true : false),
+			data: dataObj,
+			displayProp: displayPropObj
+		};
+		return agendaData;	
+	};
+	/**
 	 * Open the "more agenda items" modal dialog for the specified day.
 	 *
 	 * @param cal - Object - The Calendar object
@@ -3359,15 +3523,26 @@
 			foo: 'bar',
 			date: new Date(),
 			dayClickCallback: function(eventObj){
-				alert("Day cell clicked! Override this handler to process click events on day cells.");
+				// users can override this method to do something when a day cell is clicked.
 			},
 			agendaClickCallback: function(eventObj){
-				alert("Agenda item clicked! Override this handler to process click events on agenda items.");
-				// prevent event from bubbling down to day cells below
+				// users can override this method to do something when an agenda item is clicked.
 				eventObj.stopPropagation();
 			},
 			agendaDropCallback: function(eventObj){
-				alert("Agenda item dropped! Override this handler to process agenda drop events.");
+				// users can override this method to do something after an agenda item is dropped into a day cell.
+			},
+			agendaMouseoverCallback: function(eventObj){
+				// users can override this method to do something on agenda mouse over events.
+			},
+			applyAgendaTooltipCallback: function(agendaDivElement,agendaItem){
+				// users can override this method to apply an optional tooltip to agenda items for mouse events.
+			},
+			agendaDragStartCallback: function(eventObj,agendaDivElement,agendaItem){
+				// users can override this method to do something when dragging starts on an agenda div element
+			},
+			agendaDragStopCallback: function(eventObj,agendaDivElement,agendaItem){
+				// users can override this method to do something when dragging stops on an agenda div element
 			},
 			/*true = enable drag-and-drop, false = disabled*/
 			dragAndDropEnabled: true
@@ -3422,7 +3597,11 @@
 				thisCalOpts.dayClickCallback,
 				thisCalOpts.agendaClickCallback,
 				thisCalOpts.agendaDropCallback,
-				thisCalOpts.dragAndDropEnabled
+				thisCalOpts.dragAndDropEnabled,
+				thisCalOpts.agendaMouseoverCallback,
+				thisCalOpts.applyAgendaTooltipCallback,
+				thisCalOpts.agendaDragStartCallback,
+				thisCalOpts.agendaDragStopCallback
 			);
 			
 			// initialize calendar
@@ -3443,8 +3622,21 @@
 	 * @param agendaClickCallback - A callback function for clicks on agenda items.
 	 * @param agendaDropCallback - A callback function for drop events on agenda items.
 	 * @param dragAndDropEnabled - boolean - True to enable drag-and-drop, false to disable.
+	 * @param agendaMouseoverCallback - A callback function for mouse over events on agenda items.
+	 * @param applyAgendaTooltipCallback - A callback function that applies an optional tooltip to agenda div elements.
+	 * @param agendaDragStartCallback - A callback function that fires when a drag event starts on an agenda div element.
+	 * @param agendaDragStopCallback - A callback function that fires when a drag event stops on an agenda div element.
 	 */
-	var jFrontierCalPlugin = function(calElm,dayClickCallback,agendaClickCallback,agendaDropCallback,dragAndDropEnabled){
+	var jFrontierCalPlugin = function(
+		calElm,
+		dayClickCallback,
+		agendaClickCallback,
+		agendaDropCallback,
+		dragAndDropEnabled,
+		agendaMouseoverCallback,
+		applyAgendaTooltipCallback,
+		agendaDragStartCallback,
+		agendaDragStopCallback){
 	
 		var obj = this;
 
@@ -3456,7 +3648,15 @@
 		// the callback function that's triggered when users click an agenda cell
 		var clickEvent_agendaCell = agendaClickCallback;
 		// the callback function that's triggered when users drop an agenda div into a day cell (drag-and-drop)
-		var dropEvent_agendaCell = agendaDropCallback;		
+		var dropEvent_agendaCell = agendaDropCallback;
+		// the callback function that's triggered when users mouse over an agenda item.
+		var mouseOverEvent_agendaCell = agendaMouseoverCallback;
+		// optional callback function where users can apply a tooltip to an agenda div element.
+		var callBack_agendaTooltip = applyAgendaTooltipCallback;
+		// the callback function that's triggered when a drag event starts on an agenda div element.
+		var dragStart_agendaCell = agendaDragStartCallback;
+		// the callback function that's triggered when a drag event stops on an agenda div element.
+		var dragDrop_agendaCell = agendaDragStopCallback;
 		
 		/**
 		 * Initialized the plugin. Builds the calendar.
@@ -3469,12 +3669,16 @@
 			
 			var calObj = new Calendar();
 			calObj.initialize(
-				calElm,					// jquery object that references the calendar <div/> element.
-				dtNow,					// initialize the calendar with the current month & year
-				clickEvent_dayCell,		// callback function that's triggered when users click a day cell
-				clickEvent_agendaCell,	// callback function that's triggered when users click an agenda cell
-				dropEvent_agendaCell,	// callback function that's triggered when users drop an agenda cell into a day cell (drag-and-drop)
-				dragAndDropEnabled	    // true to enable drag-and-drop, false to disable
+				calElm,
+				dtNow,
+				clickEvent_dayCell,
+				clickEvent_agendaCell,
+				dropEvent_agendaCell,
+				dragAndDropEnabled,
+				mouseOverEvent_agendaCell,
+				callBack_agendaTooltip,
+				dragStart_agendaCell,
+				dragDrop_agendaCell
 			);
 			
 			// store our calendar in a global hash so we can get at it later
@@ -3585,7 +3789,7 @@
 					for(var itemIndex = 0; itemIndex < itemArray.length; itemIndex++){
 						// CalendarAgendaItem object
 						var agi = itemArray[itemIndex];
-						agendObj = buildReturnAgendaObject(agi);
+						agendObj = Calendar.buildUserAgendaObject(agi);
 						itemsToReturn.push(agendObj);
 					}
 				}
@@ -3653,7 +3857,7 @@
 				if(calAgendaItem == null){
 					return null;
 				}
-				return buildReturnAgendaObject(calAgendaItem);
+				return Calendar.buildUserAgendaObject(calAgendaItem);
 			}
 		};
 		
@@ -3798,7 +4002,7 @@
 		 * Retrieves the date that the calendar is currently set to.
 		 *
 		 * @param calId - (String) - The ID of the calendar </div> element.
-		 * @return A Date object. The date the calendar is currently set to.
+		 * @return A Date object. The date the calendar is currently set to (year & month)
 		 */
 		this.getCurrentDate = function(calId){
 			if(calId != null){
@@ -3844,7 +4048,7 @@
 		 * like 0.75 or 0.5. A value of 0.5 means the day cells will be roughly half as high as they are wide.
 		 *
 		 * @param calId - (String) - The ID of the calendar </div> element.
-		 * @param ration - float - A value less than or equal to 1 and greater than 0. For example, 0.5 will make the day
+		 * @param ratio - float - A value less than or equal to 1 and greater than 0. For example, 0.5 will make the day
 		 *		           cells half as tall as they are wide, 0.75 will make them 3/4th as tall as they are wide,
 		 *			       and a value of 0.25 will make them a quarter tall as they are wide resulting in a very
 		 *			       wide calendar relative to its height.
@@ -3896,63 +4100,6 @@
 			}
 			return s;
 		};
-		
-		/**
-		 * Converts the internal CalendarAgendaItem object to a new javascript Object for the end user. We
-		 * don't want them to have access to the full CalendarAgendaItem object.
-		 *
-		 * @param agendaObject - A CalendarAgendaItem object
-		 *
-		 * @return Javascript Object with the following specification, or null:
-		 *         
-		 * {
-		 *     agendaId: [integer],
-		 *     title: [string]
-		 *     startDate: [Date],
-		 *     endDate: [Date],
-		 *	   allDay: [boolean],
-		 *	   data: {
-		 *			key1: [value1],
-		 *          key2: [value2],
-		 *          etc...
-		 *     },
-		 *     displayProp: {
-		 *			backgroundColor: [string],
-		 *			foregroundColor: [string]
-		 *	   }
-		 * }
-		 */
-		function buildReturnAgendaObject(agendaObject){
-			if(agendaObject == null){
-				return null;
-			}
-			var dataObj = null;
-			var agendaItemHashData = agendaObject.getAgendaDataHash();
-			if(agendaItemHashData != null && agendaItemHashData.size() > 0){
-				dataObj = new Object();
-				var key = null;
-				var val = null;
-				var keyArray = agendaItemHashData.keys();
-				for(var keyIndex=0; keyIndex<keyArray.length; keyIndex++){
-					key = keyArray[keyIndex];
-					val = agendaItemHashData.get(key);
-					dataObj[key] = val;
-				}
-			}
-			var displayPropObj = new Object();
-			displayPropObj["backgroundColor"] = agendaObject.getBackgroundColor();
-			displayPropObj["foregroundColor"] = agendaObject.getForegroundColor();		
-			var agendaData = {
-				agendaId: agendaObject.getAgendaId(),
-				title: agendaObject.getTitle(),
-				startDate: agendaObject.getStartDate(),
-				endDate: agendaObject.getEndDate(),
-				allDay: ((agendaObject.isAllDay()) ? true : false),
-				data: dataObj,
-				displayProp: displayPropObj
-			};
-			return agendaData;
-		}
 
 	};
 
