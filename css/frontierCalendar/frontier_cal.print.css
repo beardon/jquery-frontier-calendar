@@ -1,0 +1,126 @@
+* {
+    margin-left: 0 !important;
+}
+
+.navButtons {
+    display: none !important;
+}
+
+.JFrontierCal {
+    /*display: block;
+    float: left;*/
+    /*overflow: visible;*/
+    position: absolute;
+}
+
+/*
+Style shared by all day cells.
+*/
+.JFrontierCal .JFrontierCal-Day-Cell,
+.JFrontierCal .JFrontierCal-Day-Cell-Last,
+.JFrontierCal .JFrontierCal-PrevMonth-Day-Cell,
+.JFrontierCal .JFrontierCal-NextMonth-Day-Cell,
+.JFrontierCal .JFrontierCal-NextMonth-Day-Cell-Last,
+.JFrontierCal .JFrontierCal-Day-Cell-Droppable,
+.JFrontierCal .JFrontierCal-Day-Cell-Today {
+    border-bottom: 1px solid #000000 !important;
+    border-left: 1px solid #000000 !important;
+    page-break-inside: avoid;
+    page-break-before: avoid;
+    max-width: 12.7%;  /* Makes cells skinny enough that the Saturday cells don't get cut off on the right */
+    min-height: 50px;  /* Even if there are no events, we want some height in the cell */
+    /*height: 100%;*/  /* height will need to be 100% of parent after creating week object: height: 100%; */
+    /*float: none;
+    display: inline-block;*/
+}
+
+/*
+Style for Saturday cells.
+*/
+.JFrontierCal .JFrontierCal-Day-Cell-Last,
+.JFrontierCal .JFrontierCal-NextMonth-Day-Cell-Last {
+    border-right: 1px solid #000000 !important;
+}
+
+/*
+Style for header cells (day name cells at top of calendar)
+*/
+.JFrontierCal .JFrontierCal-Header-Cell,
+.JFrontierCal .JFrontierCal-Header-Cell-Last {
+    border-top: 1px solid #000000;
+    border-bottom: 1px solid #000000;
+    border-left: 1px solid #000000;
+    max-width: 12.7%;  /* Makes cells skinny enough that the Saturday cells don't get cut off on the right */
+    /*float: none;
+    display: inline-block;*/
+}
+
+/*
+Style for Saturday header cell at top of calendar.
+*/
+.JFrontierCal .JFrontierCal-Header-Cell-Last {
+    border-right: 1px solid #000000;
+}
+
+/*
+Style for week Header cells (cells for day numbers above each week)
+*/
+.JFrontierCal .JFrontierCal-Week-Header-Cell,
+.JFrontierCal .JFrontierCal-Week-Header-Cell-Last,
+.JFrontierCal .JFrontierCal-PrevMonth-Week-Header-Cell,
+.JFrontierCal .JFrontierCal-NextMonth-Week-Header-Cell,
+.JFrontierCal .JFrontierCal-NextMonth-Week-Header-Cell-Last {
+    border-left: 1px solid #000000;
+    max-width: 12.7%;  /* Makes cells skinny enough that the Saturday cells don't get cut off on the right */
+    /*float: none;
+    display: inline-block;*/
+}
+
+/*
+Style for Saturday week header cell.
+*/
+.JFrontierCal .JFrontierCal-Week-Header-Cell-Last,
+.JFrontierCal .JFrontierCal-NextMonth-Week-Header-Cell-Last {
+    border-right: 1px solid #000000;
+}
+
+/*
+Style for agenda items. These are simply default values. Some values can be configured through the API (height, color, background-color, font, etc...)
+*/
+.JFrontierCal-Modal-Agenda-Item,
+.JFrontierCal .JFrontierCal-Day-Cell .JFrontierCal-Agenda-Item {
+    /*max-width: 100%;*/  /* Don't let the agenda item be wider than the cell it's in */
+    display: none;
+}
+
+.JFrontierCal .JFrontierCal-Day-Cell .JFrontierCal-Screen-Agenda-Item {
+    display: none;
+}
+
+.JFrontierCal .JFrontierCal-Day-Cell .JFrontierCal-Printable-Agenda-Item {
+    max-width: 100% !important;
+
+    height: auto;/*15px;*/
+    display: inline-block;  /* after making text wrap, background color for events disappeared, and this fixed it; not exactly sure why
+    word-wrap: break-word;  /* in case there is a really long word that won't fit inside the cell */
+    /*
+    Don't let text creep outside div
+    */
+    overflow: visible;/*hidden;*/
+    font: 11px verdana;
+    padding-left: 1px;
+    padding-right: 1px;
+    background-color: #7fad00;
+    color: #ffffff;
+    margin: 0px;
+    white-space: normal !important;/*nowrap;*/
+    text-align: left;
+    position: static !important;
+}
+
+/*
+Style for the "more" link seen when not all agenda items fit within a day cell.
+*/
+.JFrontierCal .JFrontierCal-Day-Cell .JFrontierCal-Agenda-More-Link {
+    display: none;
+}

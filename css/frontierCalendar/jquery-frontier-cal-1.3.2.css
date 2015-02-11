@@ -24,6 +24,15 @@ Root calendar element
 	*/
 	/*background-image:url('images/bw-tree.jpg');*/
 }
+
+.calTitle {
+    font: 30px verdana;
+}
+
+.buttons {
+    margin: 5px;
+}
+
 /*
 Style shared by all day cells.
 */
@@ -153,17 +162,20 @@ Style for agenda items. These are simply default values. Some values can be conf
 */
 .JFrontierCal-Modal-Agenda-Item,
 .JFrontierCal .JFrontierCal-Day-Cell .JFrontierCal-Agenda-Item {
-	height: 15px;
+	height: auto;/*15px;*/
+    display: inline-block;
+    word-wrap: break-word;  /* in case there is a really long word that won't fit inside the cell */
 	/*
 	Don't let text creep outside div
 	*/
-	overflow: hidden;
+	overflow: visible;/*hidden;*/
 	font: 11px verdana;
 	background-color: #7fad00;
 	color: #ffffff;
 	margin: 0px;
-	white-space: nowrap;
+	white-space: normal !important;/*nowrap;*/
 	text-align: left;
+    position: static !important;  /* Added by Veronica Powers; fixes problem of events rendering in the wrong place when page first renders */
 }
 /*
 Style for the "more" link seen when not all agenda items fit within a day cell.
