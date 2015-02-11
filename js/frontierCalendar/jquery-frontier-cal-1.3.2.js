@@ -1,11 +1,13 @@
 /**
  * Frontier JQuery Full Calendar Plugin.
  *
- * June 22, 2010 - v1.3 - Tooltip support. Additional callbacks, applyAgendaTooltipCallback, agendaDragStartCallback, 
- *						  and agendaDragStopCallback.
- * June 17, 2010 - v1.2 - Drag-and-drop, CSS updates, allDay event option.
- * June 14, 2010 - v1.1 - Few bug fixes, tweaks, and basic VEVENT ical support.
- * June 09, 2010 - v1.0 - Initial version.
+ * June 24, 2010 - v1.3.2 - Bug fix in getAgendaItemByDataAttr(). I suck...
+ * June 23, 2010 - v1.3.1 - Bug fix in deleteAgendaItemByDataAttr() function, and new reRenderAgendaItems() function!
+ * June 22, 2010 - v1.3   - Tooltip support. Additional callbacks, applyAgendaTooltipCallback, agendaDragStartCallback, 
+ *						    and agendaDragStopCallback.
+ * June 17, 2010 - v1.2   - Drag-and-drop, CSS updates, allDay event option.
+ * June 14, 2010 - v1.1   - Few bug fixes, tweaks, and basic VEVENT ical support.
+ * June 09, 2010 - v1.0   - Initial version.
  *
  * Seth Lenzi
  * slenzi@gmail.com
@@ -2610,6 +2612,8 @@
 					for(var i=0; i<itemsToDelete.length; i++){
 						this.deleteAgendaItemById(itemsToDelete[i].getAgendaId());
 					}
+					this.clearDayCellData();
+					this.renderAgendaItems();					
 				}
 			}
 		};
@@ -2621,7 +2625,7 @@
 			if(this.agendaItems != null && this.agendaItems.size() > 0){
 				this.agendaItems = new Hashtable();
 				this.clearDayCellData();
-				//this.renderAgendaItems();
+				this.renderAgendaItems();
 			}
 		};		
 		
@@ -3889,11 +3893,22 @@
 		 */
 		this.getAgendaItemByDataAttr = function(calId,attrName,attrValue){
 			if(calId != null && attrName != null && attrValue != null){
+				var itemsToReturn = new Array();
 				calId = stripNumberSign(calId);
 				var calObj = myCalendars.get(calId);
 				var itemArray = calObj.getAgendaItemByDataAttr(attrName,attrValue);
-				return itemArray;
-			}			
+				if(itemArray != null && itemArray.length > 0){
+					var agendObj = null;
+					for(var itemIndex = 0; itemIndex < itemArray.length; itemIndex++){
+						// CalendarAgendaItem object
+						var agi = itemArray[itemIndex];
+						agendObj = Calendar.buildUserAgendaObject(agi);
+						itemsToReturn.push(agendObj);
+					}					
+				}
+				return itemsToReturn;
+			}
+			return null;
 		};
 		
 		/**
@@ -4010,6 +4025,26 @@
 				var calObj = myCalendars.get(calId);
 				return calObj.getDisplayDate();
 			}
+		};
+		
+		/**
+		 * Re-render all the agenda items on the calendar. If your js code causes the location of the calendar
+		 * to move (e.g. get shifted down on the page...) the agenda items may not be rendered in the correct
+		 * location. You can call this function to re-render the agenda items so they appear in the right places.
+		 *
+		 * For example, you may have a div element located above the calendar that changes size at some point. This will
+		 * cause the calendar to shift down on the page. Since the agenda items are absolute positioned they will no
+		 * longer be in the right place. You can call this function to re-render them.
+		 *
+		 *
+		 */
+		this.reRenderAgendaItems = function(calId){
+			if(calId != null){
+				calId = stripNumberSign(calId);
+				var calObj = myCalendars.get(calId);
+				calObj.clearDayCellData();
+				calObj.renderAgendaItems();			
+			}		
 		};
 		
 		/**
