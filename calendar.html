@@ -1,0 +1,1408 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Frontier JQuery Calendar</title>
+
+<!-- Include CSS for JQuery Frontier Calendar plugin (Required for calendar plugin) -->
+<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.0.css" />
+
+<!-- Include CSS for color picker plugin (Not required for calendar plugin. Used for example.) -->
+<link rel="stylesheet" type="text/css" href="css/colorpicker/colorpicker.css" />
+
+<!-- Include CSS for JQuery UI (Required for calendar plugin.) -->
+<link rel="stylesheet" type="text/css" href="css/jquery-ui/smoothness/jquery-ui-1.8.1.custom.css" />
+
+<!-- Include JQuery Core (Required for calendar plugin) -->
+<script type="text/javascript" src="js/jquery-core/jquery-1.4.2.min.js"></script>
+
+<!-- Include JQuery UI (Required for calendar plugin.) -->
+<script type="text/javascript" src="js/jquery-ui/smoothness/jquery-ui-1.8.1.custom.min.js"></script>
+
+<!-- Include color picker plugin (Not required for calendar plugin. Used for example.) -->
+<script type="text/javascript" src="js/colorpicker/colorpicker.js"></script>
+
+<!--
+	(Required for plugin)
+	Dependancies for JQuery Frontier Calendar plugin.
+    ** THESE MUST BE INCLUDED BEFORE THE FRONTIER CALENDAR PLUGIN. **
+-->
+<script type="text/javascript" src="js/lib/jshashtable-2.1.js"></script>
+
+<!-- Include JQuery Frontier Calendar plugin -->
+<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.0.min.js"></script>
+
+</head>
+<body style="background-color: #aaaaaa;">
+
+<!-- Some CSS for our example. (Not required for calendar plugin. Used for example.)-->
+<style type="text/css" media="screen">
+/*
+Default font-size on the default ThemeRoller theme is set in ems, and with a value that when combined 
+with body { font-size: 62.5%; } will align pixels with ems, so 11px=1.1em, 14px=1.4em. If setting the 
+body font-size to 62.5% isn't an option, or not one you want, you can set the font-size in ThemeRoller 
+to 1em or set it to px.
+http://osdir.com/ml/jquery-ui/2009-04/msg00071.html
+*/
+body { font-size: 62.5%; }
+</style>
+
+<script type="text/javascript">
+$(document).ready(function(){	
+
+	var clickDate = "";
+	var clickAgendaItem = "";
+	
+	/*
+	initializes calendar with current year & month
+	specifies the callbacks for day click & agenda item click events
+	then returns instance of plugin object
+	*/
+	var jfcalplugin = $("#mycal").jFrontierCal({
+		date: new Date(),
+		dayClickCallback: myDayClickHandler,
+		agendaClickCallback: myAgendaClickHandler
+	}).data("plugin");
+
+	// make the day cells roughly 3/4th as tall as they are wide. this makes our calendar wider than it is tall. 
+	jfcalplugin.setAspectRatio("#mycal",0.75);
+	
+	/*
+	called when user clicks day cell
+	use reference to plugin object to add agenda item
+	*/
+	function myDayClickHandler(eventObj){
+		// Get the Date of the day that was clicked from the event object
+		var date = eventObj.data.calDayDate;
+		// store date in our global js variable for access later
+		clickDate = date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate();
+		// open our add event dialog
+		$('#add-event-form').dialog('open');
+	};
+	/*
+	called when user clicks and agenda item
+	use reference to plugin object to edit agenda item
+	*/
+	function myAgendaClickHandler(eventObj){
+	
+		// Get ID of the agenda item from the event object
+		var agendaId = eventObj.data.agendaId;		
+		
+		// pull agenda item from calendar
+		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);
+		clickAgendaItem = agendaItem;
+		
+		$("#display-event-form").dialog('open');
+	
+	}
+	/*
+	initialize jquery ui datepicker. set date format to yyyy-mm-dd for easy parsing
+	*/
+	$("#dateSelect").datepicker({
+		showOtherMonths: true,
+		selectOtherMonths: true,
+		changeMonth: true,
+		changeYear: true,
+		showButtonPanel: true,
+		dateFormat: 'yy-mm-dd'
+	});
+	/*
+	set datepicker to current date
+	*/
+	$("#dateSelect").datepicker('setDate', new Date());
+	/*
+	use reference to plugin object to a specific year/month
+	*/
+	$("#dateSelect").bind('change', function() {
+		var selectedDate = $("#dateSelect").val();
+		var dtArray = selectedDate.split("-");
+		var year = dtArray[0];
+		// jquery datepicker months start at 1 (1=January)		
+		var month = dtArray[1];
+		// strip any preceeding 0's		
+		month = month.replace(/^[0]+/g,"")		
+		var day = dtArray[2];
+		// plugin uses 0-based months so we subtrac 1
+		jfcalplugin.showMonth("#mycal",year,parseInt(month-1).toString());
+	});	
+	/*
+	initialize previous month button
+	*/
+	$("#BtnPreviousMonth").button();
+	/*
+	use reference to plugin object to show previous month
+	*/
+	$("#BtnPreviousMonth").click(function() {
+		jfcalplugin.showPreviousMonth("#mycal");
+		// update the jqeury datepicker value
+		var calDate = jfcalplugin.getCurrentDate("#mycal"); // returns Date object
+		var cyear = calDate.getFullYear();
+		// Date month 0-based (0=January)
+		var cmonth = calDate.getMonth();
+		var cday = calDate.getDate();
+		// jquery datepicker month starts at 1 (1=January) so we add 1
+		$("#dateSelect").datepicker("setDate",cyear+"-"+(cmonth+1)+"-"+cday);
+		return false;
+	});
+	/*
+	initialize previous month button
+	*/
+	$("#BtnNextMonth").button();
+	/*
+	use reference to plugin object to show next month
+	*/
+	$("#BtnNextMonth").click(function() {
+		jfcalplugin.showNextMonth("#mycal");
+		// update the jqeury datepicker value
+		var calDate = jfcalplugin.getCurrentDate("#mycal"); // returns Date object
+		var cyear = calDate.getFullYear();
+		// Date month 0-based (0=January)
+		var cmonth = calDate.getMonth();
+		var cday = calDate.getDate();
+		// jquery datepicker month starts at 1 (1=January) so we add 1
+		$("#dateSelect").datepicker("setDate",cyear+"-"+(cmonth+1)+"-"+cday);		
+		return false;
+	});
+
+	/*
+	initialize add event modal form
+	*/
+	$("#add-event-form").dialog({
+		autoOpen: false,
+		height: 400,
+		width: 400,
+		modal: true,
+		buttons: {
+			'Add Event': function() {
+
+				var what = jQuery.trim($("#what").val());
+			
+				if(what == ""){
+					alert("Please enter a short event description into the \"what\" field.");
+				}else{
+				
+					var startDate = $("#startDate").val();
+					var startDtArray = startDate.split("-");
+					var startYear = startDtArray[0];
+					// jquery datepicker months start at 1 (1=January)		
+					var startMonth = startDtArray[1];		
+					var startDay = startDtArray[2];
+					// strip any preceeding 0's		
+					startMonth = startMonth.replace(/^[0]+/g,"");
+					startDay = startDay.replace(/^[0]+/g,"");
+					var startHour = jQuery.trim($("#startHour").val());
+					var startMin = jQuery.trim($("#startMin").val());
+					var startMeridiem = jQuery.trim($("#startMeridiem").val());
+					startHour = parseInt(startHour.replace(/^[0]+/g,""));
+					if(startMin == "0" || startMin == "00"){
+						startMin = 0;
+					}else{
+						startMin = parseInt(startMin.replace(/^[0]+/g,""));
+					}
+					if(startMeridiem == "AM" && startHour == 12){
+						startHour = 0;
+					}else if(startMeridiem == "PM" && startHour < 12){
+						startHour = parseInt(startHour) + 12;
+					}
+
+					var endDate = $("#endDate").val();
+					var endDtArray = endDate.split("-");
+					var endYear = endDtArray[0];
+					// jquery datepicker months start at 1 (1=January)		
+					var endMonth = endDtArray[1];		
+					var endDay = endDtArray[2];
+					// strip any preceeding 0's		
+					endMonth = endMonth.replace(/^[0]+/g,"");
+
+					endDay = endDay.replace(/^[0]+/g,"");
+					var endHour = jQuery.trim($("#endHour").val());
+					var endMin = jQuery.trim($("#endMin").val());
+					var endMeridiem = jQuery.trim($("#endMeridiem").val());
+					endHour = parseInt(endHour.replace(/^[0]+/g,""));
+					if(endMin == "0" || endMin == "00"){
+						endMin = 0;
+					}else{
+						endMin = parseInt(endMin.replace(/^[0]+/g,""));
+					}
+					if(endMeridiem == "AM" && endHour == 12){
+						endHour = 0;
+					}else if(endMeridiem == "PM" && endHour < 12){
+						endHour = parseInt(endHour) + 12;
+					}
+					
+					//alert("Start time: " + startHour + ":" + startMin + " " + startMeridiem + ", End time: " + endHour + ":" + endMin + " " + endMeridiem);
+
+					// Dates use integers
+					var startDateObj = new Date(parseInt(startYear),parseInt(startMonth)-1,parseInt(startDay),startHour,startMin,0,0);
+					var endDateObj = new Date(parseInt(endYear),parseInt(endMonth)-1,parseInt(endDay),endHour,endMin,0,0);
+
+					// add new event to the calendar
+					jfcalplugin.addAgendaItem(
+						"#mycal",
+						what,
+						startDateObj,
+						endDateObj,
+						{
+							fname: "Santa",
+							lname: "Claus",
+							leadReindeer: "Rudolph",
+							myDate: new Date(),
+							myNum: 42
+						},
+						{
+							backgroundColor: $("#colorBackground").val(),
+							foregroundColor: $("#colorForeground").val()
+						}
+					);
+
+					$(this).dialog('close');
+
+				}
+				
+			},
+			Cancel: function() {
+				$(this).dialog('close');
+			}
+		},
+		open: function(event, ui){
+			// initialize start date picker
+			$("#startDate").datepicker({
+				showOtherMonths: true,
+				selectOtherMonths: true,
+				changeMonth: true,
+				changeYear: true,
+				showButtonPanel: true,
+				dateFormat: 'yy-mm-dd'
+			});
+			// initialize end date picker
+			$("#endDate").datepicker({
+				showOtherMonths: true,
+				selectOtherMonths: true,
+				changeMonth: true,
+				changeYear: true,
+				showButtonPanel: true,
+				dateFormat: 'yy-mm-dd'
+			});
+			// initialize with the date that was clicked
+			$("#startDate").val(clickDate);
+			$("#endDate").val(clickDate);
+			// initialize color pickers
+			$("#colorSelectorBackground").ColorPicker({
+				color: "#1040b0",
+				onShow: function (colpkr) {
+					$(colpkr).css("z-index","10000");
+					$(colpkr).fadeIn(500);
+					return false;
+				},
+				onHide: function (colpkr) {
+					$(colpkr).fadeOut(500);
+					return false;
+				},
+				onChange: function (hsb, hex, rgb) {
+					$("#colorSelectorBackground div").css("backgroundColor", "#" + hex);
+					$("#colorBackground").val("#" + hex);
+				}
+			});
+			$("#colorSelectorForeground").ColorPicker({
+				color: "#ffffff",
+				onShow: function (colpkr) {
+					$(colpkr).css("z-index","10000");
+					$(colpkr).fadeIn(500);
+					return false;
+				},
+				onHide: function (colpkr) {
+					$(colpkr).fadeOut(500);
+					return false;
+				},
+				onChange: function (hsb, hex, rgb) {
+					$("#colorSelectorForeground div").css("backgroundColor", "#" + hex);
+					$("#colorForeground").val("#" + hex);
+				}
+			});				
+			// put focus on first form input element
+			$("#what").focus();
+		},
+		close: function() {
+			// reset form elements when we close so they are fresh when the dialog is opened again.
+			$("#startDate").datepicker("destroy");
+			$("#endDate").datepicker("destroy");
+			$("#startDate").val("");
+			$("#endDate").val("");
+			$("#startHour option:eq(0)").attr("selected", "selected");
+			$("#startMin option:eq(0)").attr("selected", "selected");
+			$("#startMeridiem option:eq(0)").attr("selected", "selected");
+			$("#endHour option:eq(0)").attr("selected", "selected");
+			$("#endMin option:eq(0)").attr("selected", "selected");
+			$("#endMeridiem option:eq(0)").attr("selected", "selected");			
+			$("#what").val("");
+		}
+	});
+	
+	/**
+	 * Initialize display event form.
+	 */
+	$("#display-event-form").dialog({
+		autoOpen: false,
+		height: 400,
+		width: 400,
+		modal: true,
+		buttons: {		
+			Cancel: function() {
+				$(this).dialog('close');
+			},
+			'Edit': function() {
+				alert("Make your own edit screen or dialog!");
+			},
+			'Delete': function() {
+				if(confirm("Are you sure you want to delete this agenda item?")){
+					if(clickAgendaItem != null){
+						jfcalplugin.deleteAgendaItemById("#mycal",clickAgendaItem.agendaId);
+						//jfcalplugin.deleteAgendaItemByDataAttr("#mycal","myNum",42);
+					}
+					$(this).dialog('close');
+				}
+			}			
+		},
+		open: function(event, ui){
+			if(clickAgendaItem != null){
+				var title = clickAgendaItem.title;
+				var startDate = clickAgendaItem.startDate;
+				var endDate = clickAgendaItem.endDate;
+				var data = clickAgendaItem.data;
+				// in our example add agenda modal form we put some fake data in the agenda data. we can retrieve it here.
+				var fname = data.fname;
+				var lname = data.lname;
+				var leadReindeer = data.leadReindeer;
+				var myDate = data.myDate;			
+				$("#display-event-form").append(
+					"<br><b>" + title+ "</b><br><br>" +
+					"<b>Starts:</b> " + startDate + "<br>" +
+					"<b>Ends:</b> " + endDate + "<br><br>" +
+					"<b>Stored Data:</b><br><br>" +
+					fname + "<br>" +
+					lname + "<br>" +
+					leadReindeer + "<br>" +
+					myDate					
+				);
+			}		
+		},
+		close: function() {
+			// clear agenda data
+			$("#display-event-form").html("");
+		}
+	});	 
+
+	/**
+	 * Initialize our tabs
+	 */
+	$("#tabs").tabs({
+		/*
+		 * Our calendar is initialized in a closed tab so we need to resize it when the example tab opens.
+		 */
+		show: function(event, ui){
+			if(ui.index == 1){
+				jfcalplugin.doResize("#mycal");
+			}
+		}	
+	});
+	
+});
+</script>
+
+<h1 style="font-size: 30px; font-weight: bold;">jQuery Frontier Calendar</h1>
+
+<div id="tabs">
+	<ul>
+		<li><a href="#tabs-1">Introduction</a></li>
+		<li><a href="#tabs-2">Example</a></li>
+		<li><a href="#tabs-3">Documentation</a></li>
+	</ul>
+	<div id="tabs-1">
+		
+		<p>
+		Frontier Calendar is a full month jQuery plugin. It was designed to look like Google Calendar.
+		</p>
+		
+		<b>Screenshot 1</b>
+		<p>
+		<img src="documentationImages/FrontierCalendar02.png" style="border: 0px solid;">
+		</p>
+
+		<b>Screenshot 2</b>
+		<p>
+		<img src="documentationImages/FrontierCalendar03.png" style="border: 0px solid;">
+		</p>
+
+		<b>Screenshot 3: Change background image via CSS file.</b>
+		<p>
+		<img src="documentationImages/FrontierCalendar04.png" style="border: 0px solid;">
+		</p>
+		
+	</div>	
+	<div id="tabs-2">
+
+		<div id="example" style="margin: auto; width:80%;">
+		
+		<br>
+		
+		<p><b>Click the calendar to add some agenda items.</b></p>
+
+		<div id="toolbar" class="ui-widget-header ui-corner-all" style="padding:3px; vertical-align: middle; white-space:nowrap;">
+			<button id="BtnPreviousMonth">Previous Month</button>
+			<button id="BtnNextMonth">Next Month</button>
+			&nbsp;&nbsp;&nbsp;
+			Date: <input type="text" id="dateSelect" size="20"/>
+		</div>
+
+		<br>
+
+		<!--
+		You can use pixel widths or percentages. Calendar will auto resize all sub elements.
+		Height will be calculated by aspect ratio. Basically all day cells will be as tall
+		as they are wide.
+		-->
+		<div id="mycal"></div>
+
+		</div>
+
+		<!-- debugging-->
+		<div id="calDebug"></div>
+
+		<!-- Add event modal form -->
+		<style type="text/css">
+			//label, input.text, select { display:block; }
+			fieldset { padding:0; border:0; margin-top:25px; }
+			.ui-dialog .ui-state-error { padding: .3em; }
+			.validateTips { border: 1px solid transparent; padding: 0.3em; }
+		</style>
+		<div id="add-event-form" title="Add New Event">
+			<p class="validateTips">All form fields are required.</p>
+			<form>
+			<fieldset>
+				<label for="name">What?</label>
+				<input type="text" name="what" id="what" class="text ui-widget-content ui-corner-all" style="margin-bottom:12px; width:95%; padding: .4em;"/>
+				<table style="width:100%; padding:5px;">
+					<tr>
+						<td>
+							<label>Start Date</label>
+							<input type="text" name="startDate" id="startDate" value="" class="text ui-widget-content ui-corner-all" style="margin-bottom:12px; width:95%; padding: .4em;"/>				
+						</td>
+						<td>&nbsp;</td>
+						<td>
+							<label>Start Hour</label>
+							<select id="startHour" class="text ui-widget-content ui-corner-all" style="margin-bottom:12px; width:95%; padding: .4em;">
+								<option value="12" SELECTED>12</option>
+								<option value="1">1</option>
+								<option value="2">2</option>
+								<option value="3">3</option>
+								<option value="4">4</option>
+								<option value="5">5</option>
+								<option value="6">6</option>
+								<option value="7">7</option>
+								<option value="8">8</option>
+								<option value="9">9</option>
+								<option value="10">10</option>
+								<option value="11">11</option>
+							</select>				
+						<td>
+						<td>
+							<label>Start Minute</label>
+							<select id="startMin" class="text ui-widget-content ui-corner-all" style="margin-bottom:12px; width:95%; padding: .4em;">
+								<option value="00" SELECTED>00</option>
+								<option value="10">10</option>
+								<option value="20">20</option>
+								<option value="30">30</option>
+								<option value="40">40</option>
+								<option value="50">50</option>
+							</select>				
+						<td>
+						<td>
+							<label>Start AM/PM</label>
+							<select id="startMeridiem" class="text ui-widget-content ui-corner-all" style="margin-bottom:12px; width:95%; padding: .4em;">
+								<option value="AM" SELECTED>AM</option>
+								<option value="PM">PM</option>
+							</select>				
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<label>End Date</label>
+							<input type="text" name="endDate" id="endDate" value="" class="text ui-widget-content ui-corner-all" style="margin-bottom:12px; width:95%; padding: .4em;"/>				
+						</td>
+						<td>&nbsp;</td>
+						<td>
+							<label>End Hour</label>
+							<select id="endHour" class="text ui-widget-content ui-corner-all" style="margin-bottom:12px; width:95%; padding: .4em;">
+								<option value="12" SELECTED>12</option>
+								<option value="1">1</option>
+								<option value="2">2</option>
+								<option value="3">3</option>
+								<option value="4">4</option>
+								<option value="5">5</option>
+								<option value="6">6</option>
+								<option value="7">7</option>
+								<option value="8">8</option>
+								<option value="9">9</option>
+								<option value="10">10</option>
+								<option value="11">11</option>
+							</select>				
+						<td>
+						<td>
+							<label>End Minute</label>
+							<select id="endMin" class="text ui-widget-content ui-corner-all" style="margin-bottom:12px; width:95%; padding: .4em;">
+								<option value="00" SELECTED>00</option>
+								<option value="10">10</option>
+								<option value="20">20</option>
+								<option value="30">30</option>
+								<option value="40">40</option>
+								<option value="50">50</option>
+							</select>				
+						<td>
+						<td>
+							<label>End AM/PM</label>
+							<select id="endMeridiem" class="text ui-widget-content ui-corner-all" style="margin-bottom:12px; width:95%; padding: .4em;">
+								<option value="AM" SELECTED>AM</option>
+								<option value="PM">PM</option>
+							</select>				
+						</td>				
+					</tr>			
+				</table>
+				<table>
+					<tr>
+						<td>
+							<label>Background Color</label>
+						</td>
+						<td>
+							<div id="colorSelectorBackground"><div style="background-color: #1040b0; width:30px; height:30px; border: 2px solid #000000;"></div></div>
+							<input type="hidden" id="colorBackground" value="#1040b0">
+						</td>
+						<td>&nbsp;&nbsp;&nbsp;</td>
+						<td>
+							<label>Text Color</label>
+						</td>
+						<td>
+							<div id="colorSelectorForeground"><div style="background-color: #ffffff; width:30px; height:30px; border: 2px solid #000000;"></div></div>
+							<input type="hidden" id="colorForeground" value="#ffffff">
+						</td>						
+					</tr>				
+				</table>
+			</fieldset>
+			</form>
+		</div>
+		
+		<div id="display-event-form" title="View Agenda Item">
+			
+		</div>		
+
+		<p>&nbsp;</p>
+
+	</div><!-- end example tab -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	<div id="tabs-3">
+
+<style type="text/css" media="screen">
+a {
+  font: 11px/14px georgia, times, verdana, arial, helvetica, sans-serif;
+  text-decoration:none;
+}
+a:hover { background-color:#ccc; }
+a:link { color:royalblue; }
+a:visited { color:royalblue; }
+.code, .info, .codeHead, .apiHead, .api {
+	background-color: #dddddd;
+	color: #000000;
+	font: 11px/14px verdana, georgia, times, arial, helvetica, sans-serif;
+	line-height: 18px;
+	padding: 3px;
+	margin: 0px;
+}
+.codeHead {
+	background-color: #bbbbbb;
+}
+.info {
+	background-color: #ffffff;
+	color: #444444;
+}
+.apiHead{
+	background-color: #dedede;
+	color: #000000;
+}
+.api {
+	background-color: #ffffff;
+	color: #333333;
+}
+	
+table.apiTable {
+	border-width: 0px 0px 0px 0px;
+	border-spacing: 2px;
+	border-style: outset outset outset outset;
+	border-color: gray gray gray gray;
+	border-collapse: collapse;
+	background-color: #ffffff;
+	width: 100%;
+}
+table.apiTable th {
+	font: 12px/12px verdana, georgia, times, arial, helvetica, sans-serif;
+	font-weight: bold;
+	text-align: left;
+	color: #555555;
+	border-width: 1px 1px 1px 1px;
+	padding: 3px 3px 3px 3px;
+	border-style: inset inset inset inset;
+	border-color: rgb(200,200,200);
+	background-color: #ffffff;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+table.apiTable td {
+	font: 12px/12px verdana, georgia, times, arial, helvetica, sans-serif;
+	color: #555555;
+	border-width: 1px 1px 1px 1px;
+	padding: 3px 3px 3px 3px;
+	border-style: inset inset inset inset;
+	border-color: rgb(200,200,200);
+	background-color: #ffffff;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+</style>	
+	
+	
+	
+<h2>Sections</h2>
+<ul>
+<li><a href="#License">License & Usage</a></li>
+<li><a href="#Requirements">Requirements</a></li>
+<li><a href="#Install">Installation Instructions</a></li>
+<li><a href="#Initialization">Initialize Calendar</a></li>
+<li><a href="#Sizing">Calendar Sizing</a></li>
+<li><a href="#RetrieveAgendaItem">Retrieve Agenda Items</a></li>
+<li><a href="#AddAgendaItem">Add Agenda Items</a></li>
+<li><a href="#DeleteAgendaItem">Delete Agenda Items</a></li>
+<li><a href="#EditAgendaItem">Edit Agenda Items</a></li>
+</ul>
+
+<a name="License"></a>
+<h2>License & Usage</h2>
+
+<p>
+Free to use. You're welcome. I claim no responsibility if it explodes in a cloud of doom.
+</p>
+
+<p>
+Seth Lenzi<br>
+<a href="mailto:slenzi@gmail.com">slenzi@gmail.com</a>
+</p>
+
+<a name="Requirements"></a>
+<h2>Requirements</h2>
+
+<p>
+<b>JQuery Core</b><br>
+<a href="http://jquery.com/">http://jquery.com/</a><br>
+</p>
+
+<p>
+<b>JQuery UI</b><br>
+Tested with 1.4.2<br>
+<a href="http://jqueryui.com">http://jqueryui.com</a><br>
+</p>
+
+<p>
+<b>jshashtable</b><br>
+<a href="http://www.timdown.co.uk/jshashtable/">http://www.timdown.co.uk/jshashtable/</a><br>
+<a href="http://code.google.com/p/jshashtable/">http://code.google.com/p/jshashtable/</a><br>
+</p>
+
+
+
+<a name="Install"></a>
+<h2>Installation Instructions</h2>
+
+<p>
+<b>Step 1:</b> If you don't already have the <b>jQuery Core</b> library you should download it from <a href="http://jquery.com/">jQuery's web site</a>. This is simply a javascript file
+that you add to your HTML document root. A good location is in a folder named "js" or "javascript". <b>Note:</b> jQuery core is already included with this example in the js/ folder.
+<xmp>
+WebContent/
+  |__js/
+  |   |__jquery-core/  
+  |         |__jquery-1.4.2.min.js
+  |
+  |__index.html
+</xmp>
+</p>
+
+<p>
+<b>Step 2:</b> If you don't already have the <b>jQuery UI</b> library you should download it from <a href="http://jqueryui.com">jQuery's UI web site</a>. This consists of a javascript file
+and a CSS file. Add both files to your HTML document root. Javascript files should go in a folder named "js" or "javascript" and CSS files should go in a folder names "css".
+<b>Note:</b> jQuery UI with the smoothness theme is already included with this example in the css/ folder.
+<xmp>
+WebContent/
+  |__js/
+  |   |__jquery-core/  
+  |   |     |__jquery-1.4.2.min.js
+  |   |
+  |   |__jquery-ui/
+  |         |__smoothness/
+  |               |__jquery-ui-1.8.1.custom.min.js
+  |__css/
+  |   |__jquery-ui/
+  |         |__smoothness/
+  |               |__jquery-ui-1.8.1.custom.css
+  |__index.html
+</xmp>
+</p>
+
+<p>
+<b>Step 3:</b> Add the <b>Frontier Calendar Javascript</b> file and <b>Frontier Calendar CSS</b> file to your HTML document root.
+<xmp>
+WebContent/
+  |__js/
+  |   |__jquery-core/  
+  |   |     |__jquery-1.4.2.min.js
+  |   |
+  |   |__jquery-ui/
+  |   |     |__smoothness/
+  |   |           |__jquery-ui-1.8.1.custom.min.js
+  |   |
+  |   |__frontierCalendar/  
+  |         |__jquery-frontier-cal-1.0.min.js
+  |
+  |__css/
+  |   |__jquery-ui/
+  |   |     |__smoothness/
+  |   |           |__jquery-ui-1.8.1.custom.css
+  |   |
+  |   |__frontierCalendar/  
+  |         |__jquery-frontier-cal-1.0.css
+  |
+  |__index.html
+</xmp>
+</p>
+
+<p>
+<b>Step 4:</b> Add the required <b>jshashtable-2.1.js</b> library inlcude in the example /js/lib/ folder.
+<a href="http://code.google.com/p/jshashtable/">http://code.google.com/p/jshashtable/</a><br>
+<b>Note: This library must be inlcuded before the Frontier Calendar javascript file!</b>
+<xmp>
+WebContent/
+  |__js/
+  |   |__jquery-core/  
+  |   |     |__jquery-1.4.2.min.js
+  |   |
+  |   |__jquery-ui/
+  |   |     |__smoothness/
+  |   |           |__jquery-ui-1.8.1.custom.min.js
+  |   |
+  |   |__frontierCalendar/  
+  |   |     |__jquery-frontier-cal-1.0.min.js
+  |   |
+  |   |__lib/
+  |        |__jshashtable-2.1.js
+  |
+  |__css/
+  |   |__jquery-ui/
+  |   |     |__smoothness/
+  |   |           |__jquery-ui-1.8.1.custom.css
+  |   |
+  |   |__frontierCalendar/  
+  |         |__jquery-frontier-cal-1.0.css
+  |
+  |__index.html
+</xmp>
+</p>
+
+<p>
+<b>Step 5:</b> Inlcude all libraries on your html page. (<b>Note:</b> The colorpicker javascript file and css file are not required. This is used in the example.)
+<xmp>
+<link rel="stylesheet" type="text/css" href="css/frontierCalendar/jquery-frontier-cal-1.0.css" />
+<!-- Include CSS for color picker plugin (Not required for calendar plugin. Used for example.) -->
+<link rel="stylesheet" type="text/css" href="css/colorpicker/colorpicker.css" />
+<link rel="stylesheet" type="text/css" href="css/jquery-ui/smoothness/jquery-ui-1.8.1.custom.css" />
+<script type="text/javascript" src="js/jquery-core/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="js/jquery-ui/smoothness/jquery-ui-1.8.1.custom.min.js"></script>
+<!-- Include color picker plugin (Not required for calendar plugin. Used for example.) -->
+<script type="text/javascript" src="js/colorpicker/colorpicker.js"></script>
+<!--
+    ** THESE MUST BE INCLUDED BEFORE THE FRONTIER CALENDAR PLUGIN. **
+-->
+<script type="text/javascript" src="js/lib/jshashtable-2.1.js"></script>
+<script type="text/javascript" src="js/frontierCalendar/jquery-frontier-cal-1.0.min.js"></script>
+</xmp>
+</p>
+
+
+
+<a name="Initialization"></a>
+<h2>Initialize Calendar</h2>
+
+<p>
+Initialize the calendar with the current year and month using the date parameter. Provide callback functions for click events 
+using the <b>dayClickCallback</b> and <b>agendaClickCallback</b> parameters. The <b>dayClickCallback</b> will be fired when users click on a day 
+cell and the <b>agendaClickCallback</b> will be fired when users click on an agenda item.
+</p>
+
+<p>
+After initialization retrieve a reference to the plugin using <b>.data("plugin")</b>. The <b>jfcalplugin</b> object is the interface to 
+the calendar and will be used later to interact with the calendar (add/edit/delete agenda items, etc.)
+</p>
+
+<div class="codeHead"><b>Example:</b> Initialize Plugin With Current Year & Month</div>
+<xmp class="code">
+<script type="text/javascript">
+$(document).ready(function(){
+
+	/**
+	 * Initialize with current year and date. Returns reference to plugin object.
+	 */
+	var jfcalplugin = $("#mycal").jFrontierCal({
+		date: new Date(),
+		dayClickCallback: myDayClickHandler,
+		agendaClickCallback: myAgendaClickHandler
+	}).data("plugin");
+	
+	/**
+	 * Get the date (Date object) of the day that was clicked from the event object
+	 */
+	function myDayClickHandler(eventObj){
+		var date = eventObj.data.calDayDate;
+		alert("You clicked day " + date.toDateString());
+	};
+	
+	/**
+	 * Get the agenda ID (integer) of the agenda item that was clicked from the event object
+	 */
+	function myAgendaClickHandler (eventObj){
+		var agendaId = eventObj.data.agendaId;
+		var agendaItem = jfcalplugin.getAgendaItemById("#mycal",agendaId);
+	};
+	
+});
+</script>
+
+<div id="mycal"></div>
+
+</xmp>
+
+
+
+
+<a name="Sizing"></a>
+<h2>Calendar Sizing</h2>
+
+<p>
+By default the calendar is 100% wide and the height is calculated by aspect ratio. The day cells will be roughly the same height as 
+they are wide (minus the height of the week headers that show the day numbers.) There are a couple ways you can control the size of
+the calendar.
+</p>
+
+<p>
+<b>Option 1: CSS File</b><br>
+In the CSS file you can change the <b>width</b> attribute of the <b>.JFrontierCal</b> element. You may use precentage widths and pixel widths.
+</p>
+
+<p>
+<b>Option 2: Aspect ratio</b><br>
+By default the aspect ratio is 1. This makes the day cells roughly the same height as they are wide. Using the API you can change this value.
+For example, you can set the aspect ratio to 0.5 to make the day cells half as tall as they are wide resulting in a calendar that is much
+wider than it is tall. The aspect ratio value must be less that or equal to 1, and greater than 0. A value of 0.75 makes the day cells 3/4th
+as tall as they are wide, and a value of 0.25 makes the day cells 1/4th tall as they are wide.
+</p>
+
+<p>
+<img src="documentationImages/AspectRatio.png" style="border: 0px solid;">
+</p>
+
+<p>
+To change the aspect ratio use the <b>jfcalplugin.setAspectRatio()</b> method.
+</p>
+
+<p>
+<div class="apiHead"><b>Method Signature:</b> setAspectRatio(calId,ratio)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>calId</td>
+		<td>String</td>
+		<td>The ID of the calendar div element.</td>
+	</tr>
+	<tr>
+		<td>ratio</td>
+		<td>Float</td>
+		<td>A value less than or equal to 1 and greater than 0.</td>
+	</tr>		
+</table>
+</p>
+
+<div class="codeHead"><b>Example:</b> Set Aspect Ratio</div>
+<xmp class="code">
+<!--
+jfcalplugin object is reference to calendar plugin. See initialization example above on how to obtain reference to plugin object.
+-->
+jfcalplugin.setAspectRatio("#mycal",0.75);
+</xmp>
+
+
+
+
+<a name="RetrieveAgendaItem"></a>
+<h2>Retrieve Agenda Items</h2>
+
+<p>
+To retrieve agenda items from the calendar use <b>jfcalplugin.getAgendaItemById()</b> or <b>jfcalplugin.getAgendaItemByDataAttr()</b> or <b>jfcalplugin.getAllAgendaItems()</b> 
+</p>
+
+<b>Agenda Item Object Specification:</b>
+<xmp>
+{
+	agendaId: [integer],
+	title: [string]
+	startDate: [Date],
+	endDate: [Date],
+	data: {
+		key1: [value1],
+		key2: [value2],
+		etc...
+	},
+	displayProp: {
+		backgroundColor: [string],
+		foregroundColor: [string]
+	}
+}
+</xmp>
+
+<p>
+<div class="apiHead"><b>Method Signature:</b> getAgendaItemById(calId,agendaId)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>calId</td>
+		<td>String</td>
+		<td>The ID of the calendar div element.</td>
+	</tr>
+	<tr>
+		<td>agendaId</td>
+		<td>integer</td>
+		<td>The internal agenda ID. You can get this ID from event object on click events.</td>
+	</tr>
+	<tr>
+		<td colspan="3">
+			<b>Returns:</b> A single agenda item object.
+		</td>
+	</tr>	
+</table>
+</p>
+
+<p>
+<div class="apiHead"><b>Method Signature:</b> getAgendaItemByDataAttr(calId,attrName,attrValue)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>calId</td>
+		<td>String</td>
+		<td>The ID of the calendar div element.</td>
+	</tr>	
+	<tr>
+		<td>attrName</td>
+		<td>String</td>
+		<td>
+			The name of the attribute in the agenda data object. When you add an agenda item to the calendar one of the
+			parameters is an object with key value pairs. This allows you to store any data you want in the agenda item.
+<xmp>
+Example data object:
+{
+myCustomAgendaId: "12345",
+fname: "Papa",
+lname: "Smurf"
+}
+</xmp>
+			For this example data object you can retrieve the agenda item like so, getAgendaItemByDataAttr("#mycal","myCustomAgendaId","12345");
+		</td>
+	</tr>
+	<tr>
+		<td>attrValue</td>
+		<td>string/number</td>
+		<td>
+			The attribute value in the data object.
+		</td>
+	</tr>
+	<tr>
+		<td colspan="3">
+			<b>Return:</b> An array of agenda item objects. All agenda items that have the matching attribute value. If there is only
+			one than the array will be of length 1.
+		</td>
+	</tr>	
+</table>
+</p>
+
+<p>
+<div class="apiHead"><b>Method Signature:</b> getAllAgendaItems(calId)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>calId</td>
+		<td>String</td>
+		<td>The ID of the calendar div element.</td>
+	</tr>
+	<tr>
+		<td colspan="3">
+			<b>Return:</b> An array of agenda item objects.
+		</td>
+	</tr>
+</table>
+</p>
+
+<div class="codeHead"><b>Example:</b> Get Agenda Items from Calendar</div>
+<xmp class="code">
+<script type="text/javascript">
+$(document).ready(function(){
+
+	/**
+	 * Initialize with current year and date. Returns reference to plugin object.
+	 */
+	var jfcalplugin = $("#mycal").jFrontierCal({
+		date: new Date(),
+		dayClickCallback: myDayClickHandler,
+		agendaClickCallback: myAgendaClickHandler
+	}).data("plugin");
+	
+	// add sample item so we can retrieve it
+	jfcalplugin.addAgendaItem(
+		"#mycal",
+		"Indiana Jones and the Last Crusade",
+		new Date(1989,4,24,1,0,0,0),
+		new Date(1989,4,24,23,59,59,999),
+		{
+			fname: "Indiana",
+			lname: "Jones",
+			artifact: "Holy Grail"
+		},
+		{
+			backgroundColor: "#FF0000",
+			foregroundColor: "#FFFFFF"
+		}	
+	);	
+	function myDayClickHandler(eventObj){
+		var date = eventObj.data.calDayDate;
+	};
+	function myAgendaClickHandler (eventObj){
+		var agendaId = eventObj.data.agendaId;
+		// retrieve agend item by ID
+		var item = jfcalplugin.getAgendaItemById("#mycal",agendaId);		
+	};
+	
+	// retrieve agend item by data attribute
+	var item = jfcalplugin.getAgendaItemByDataAttr("#mycal","fname","Indiana");
+	
+	// get all agenda items
+	var allItemsArray = jfcalplugin.getAllAgendaItems("#mycal");
+	
+});
+</script>
+
+<div id="mycal"></div>
+
+</xmp>
+
+
+
+
+<a name="AddAgendaItem"></a>
+<h2>Add Agenda Items</h2>
+
+<p>
+To add an agenda item to the calendar use the <b>jfcalplugin.addAgendaItem()</b> method.
+</p>
+
+<p>
+<div class="apiHead"><b>Method Signature:</b> addAgendaItem(calId,title,startDate,endDate,data,displayProp)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>calId</td>
+		<td>String</td>
+		<td>The ID of the calendar div element.</td>
+	</tr>
+	<tr>
+		<td>title</td>
+		<td>String</td>
+		<td>The title of the agenda item. This is displayed on the agenda div element.</td>
+	</tr>
+	<tr>
+		<td>startDate</td>
+		<td>Date</td>
+		<td>Date & time the agenda event starts.</td>
+	</tr>
+	<tr>
+		<td>endDate</td>
+		<td>Date</td>
+		<td>Date & time the agenda event ends.</td>
+	</tr>
+	<tr>
+		<td>data</td>
+		<td>Object</td>
+		<td>
+			Any optional data you want to store in the agenda item. An object with a series of key value pairs.
+			e.g. {var1: "some data", var2: "more data", var3: "etc..."}<br><br>
+			Pass null if you don't want to store any data.
+		</td>
+	</tr>
+	<tr>
+		<td>displayProp</td>
+		<td>Object</td>
+		<td>
+Optional display properties for the agenda item, or null.
+<xmp>
+Allowed Options:
+{
+backgroundColor: [string],
+foregroundColor: [string]
+}
+</xmp>
+Color values can be hex, rbg, or color name (e.g. "#FF0000", or "rgb(255,0,0)" or "red")
+		</td>
+	</tr>	
+</table>
+</p>
+
+<div class="codeHead"><b>Example:</b> Add Agenda Item</div>
+<xmp class="code">
+<!--
+jfcalplugin object is reference to calendar plugin. See initialization example above on how to obtain reference to plugin object.
+-->
+jfcalplugin.addAgendaItem(
+	"#mycal",
+	"Christmas Eve",
+	new Date(2010,11,24,20,0,0,0),
+	new Date(2010,11,24,23,59,59,999),
+	{
+		fname: "Santa",
+		lname: "Claus",
+		leadReindeer: "Rudolph",
+		myExampleDate: new Date()
+	},
+	{
+		backgroundColor: "#FF0000",
+		foregroundColor: "#FFFFFF"
+	}	
+);
+</xmp>
+
+
+
+
+<a name="DeleteAgendaItem"></a>
+<h2>Delete Agenda Items</h2>
+
+<p>
+To delete an agenda item use either the <b>jfcalplugin.deleteAgendaItemById()</b> method or the <b>jfcalplugin.deleteAgendaItemByDataAttr()</b> method.
+</p>
+
+<p>
+<div class="apiHead"><b>Method Signature:</b> deleteAgendaItemById(calId,agendaId)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>calId</td>
+		<td>String</td>
+		<td>The ID of the calendar div element.</td>
+	</tr>
+	<tr>
+		<td>agendaId</td>
+		<td>integer</td>
+		<td>The internal agenda ID. You can get this ID from event object on click events.</td>
+	</tr>		
+</table>
+</p>
+
+<div class="codeHead"><b>Example:</b> Delete Agenda Item By ID.</div>
+<xmp class="code">
+<script type="text/javascript">
+$(document).ready(function(){
+
+	var jfcalplugin = $("#mycal").jFrontierCal({
+		date: new Date(),
+		dayClickCallback: myDayClickHandler,
+		agendaClickCallback: myAgendaClickHandler
+	}).data("plugin");
+	
+	function myDayClickHandler(eventObj){
+		var date = eventObj.data.calDayDate;
+		alert("You clicked day " + date.toDateString());
+	};
+	
+	/**
+	 * Delete any agenda item when it's clicked.
+	 */
+	function myAgendaClickHandler (eventObj){
+		var agendaId = eventObj.data.agendaId;
+		jfcalplugin.deleteAgendaItemById("#mycal",agendaId);
+	};
+	
+});
+</script>
+
+<div id="mycal"></div>
+
+</xmp>
+
+<p>
+<div class="apiHead"><b>Method Signature:</b> deleteAgendaItemByDataAttr(calId,attrName,attrValue)</div>
+<table class="apiTable">
+	<tr>
+		<th>Parameter</th>
+		<th>Type</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>calId</td>
+		<td>String</td>
+		<td>The ID of the calendar div element.</td>
+	</tr>	
+	<tr>
+		<td>attrName</td>
+		<td>String</td>
+		<td>
+			The name of the attribute in the agenda data object. When you add an agenda item to the calendar one of the
+			parameters is an object with key value pairs. This allows you to store any data you want in the agenda item.
+<xmp>
+Example data object:
+{
+myCustomAgendaId: "12345",
+fname: "Papa",
+lname: "Smurf"
+}
+</xmp>
+			For this example data object you can delete the agenda item like so, deleteAgendaItemByDataAttr("#mycal","myCustomAgendaId","12345");
+		</td>
+	</tr>
+	<tr>
+		<td>attrValue</td>
+		<td>string/number</td>
+		<td>
+			The attribute value in the data object.
+		</td>
+	</tr>		
+</table>
+</p>
+
+<div class="codeHead"><b>Example:</b> Delete Agenda Item By Data Attribute Value.</div>
+<xmp class="code">
+<script type="text/javascript">
+$(document).ready(function(){
+
+	var jfcalplugin = $("#mycal").jFrontierCal({
+		date: new Date(),
+		dayClickCallback: myDayClickHandler,
+		agendaClickCallback: myAgendaClickHandler
+	}).data("plugin");
+	
+	// add sample item so we can delete it
+	jfcalplugin.addAgendaItem(
+		"#mycal",
+		"Indiana Jones and the Last Crusade",
+		new Date(1989,4,24,1,0,0,0),
+		new Date(1989,4,24,23,59,59,999),
+		{
+			fname: "Indiana",
+			lname: "Jones",
+			artifact: "Holy Grail"
+		},
+		{
+			backgroundColor: "#FF0000",
+			foregroundColor: "#FFFFFF"
+		}	
+	);	
+	
+	function myDayClickHandler(eventObj){
+		var date = eventObj.data.calDayDate;
+		alert("You clicked day " + date.toDateString());
+	};
+	
+	/**
+	 * Delete the clicked agenda item if it has a data attribute name "artifact" with value "Holy Grail"
+	 */
+	function myAgendaClickHandler (eventObj){
+		var agendaId = eventObj.data.agendaId;
+		jfcalplugin.deleteAgendaItemByDataAttr("#mycal","artifact","Holy Grail");
+	};
+	
+});
+</script>
+
+<div id="mycal"></div>
+
+</xmp>
+
+<p>&nbsp;</p>
+<a name="EditAgendaItem"></a>
+<h2>Edit Agenda Items</h2>
+
+<p>Documentation coming soon!</p>
+
+<p>For now you simply pull the agenda item from the calendar, update it, delete the existing entry and then re-add it. I will have a nice update method later.</p>	
+	
+	</div>
+
+</div><!-- end tabs -->
+
+<p>&nbsp;</p>
+
+
+</body>
+</html>
