@@ -1,0 +1,9 @@
+# Intellij
+.idea
+*.iml
+
+# Node.js
+bower_components
+node_modules
+
+# jquery-frontier-calendar

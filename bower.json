@@ -1,0 +1,55 @@
+{
+  "name": "jquery-frontier-calendar",
+  "description": "Full month calendar jQuery plugin that looks like Google Calendar",
+  "version": "1.4.0",
+  "main": "./js/frontierCalendar/jquery-frontier-cal-1.4.0.js",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "keywords": [
+    "calendar",
+    "jquery",
+    "plugin",
+    "js",
+    "javascript",
+    "month",
+    "agenda",
+    "ical",
+    "ui",
+    "jqueryui",
+    "drag-and-drop",
+    "events",
+    "monthcalendar",
+    "gcal"
+  ],
+  "authors": [
+    {
+      "name": "Seth Lenzi",
+      "email": "slenzi@gmail.com",
+      "homepage": "https://github.com/slenzi"
+    },
+    {
+      "name": "Veronica Powers",
+      "email": "veronica.powers@beardon.com",
+      "homepage": "https://github.com/veronicapowersbeardon"
+    },
+    {
+      "name": "Aaron Bean",
+      "email": "aaron.bean@beardon.com",
+      "homepage": "https://github.com/aaronbean"
+    }
+  ],
+  "homepage": "https://github.com/beardon/jquery-frontier-calendar",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/beardon/jquery-frontier-calendar.git"
+  },
+  "dependencies": {
+    "jquery-ui": "~1.11.2"
+  }
+}
