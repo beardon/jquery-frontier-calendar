@@ -11,13 +11,16 @@ will look messed up.
 
 .calTitle {
     font: 30px verdana;
-    display: none;  /* Javascript controller file will make visible. */
+    float: left;
+    clear: both;
+    display: none;  /* Javascript controller file can set to visible. */
 }
 
 .navButtons {
     margin: 5px;
     float: right;
-    display: none;  /* Javascript controller file will make visible. */
+    clear: left;
+    display: none;  /* Javascript controller file can set to visible. */
 }
 
 /*
@@ -27,9 +30,7 @@ Root calendar element
     border: 0px solid #dddddd;
     padding: 0px;
     margin: 0px 0px 100px;
-    float: left;
-    clear: right;
-    width: inherit;  /* calendar was stretching horizontally in IE, this fixed it. */
+    width: inherit;  /* keeps calendar from stretching horizontally in IE */
     display: none;  /* Javascript controller file will make visible. */
     /*width: 1024px;*/
     /*
@@ -53,11 +54,12 @@ Style for week cells.
     font: 13px verdana;
     text-align: right;
     page-break-inside: avoid;
+    clear: left;
 }
 
 .JFrontierCal .JFrontierCal-Week-Cell .JFrontierCal-Day-Cell{
     height: auto !important;  /* lets day be as tall as its content */
-    min-height: 125px;
+    min-height: 125px;  /* but we want a minimum height */
 }
 
 /*
@@ -131,6 +133,7 @@ Style for current date day cell
 Style for header cells (day name cells at top of calendar)
 */
 .JFrontierCal .JFrontierCal-Header-Cell,
+.JFrontierCal .JFrontierCal-Header-Cell-First,
 .JFrontierCal .JFrontierCal-Header-Cell-Last {
     padding: 0px;
     border-top: 0px solid #ffffff;
@@ -144,6 +147,7 @@ Style for header cells (day name cells at top of calendar)
     clear: right;
     height: 17px;
 }
+
 /*
 Style for Saturday header cell at top of calendar.
 */

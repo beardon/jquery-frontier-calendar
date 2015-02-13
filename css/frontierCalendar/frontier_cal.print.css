@@ -2,14 +2,16 @@
     margin-left: 0 !important;
 }
 
+.calTitle {
+    margin-bottom: 5px;  /* Put a little space between title and calendar. */
+    float: none;
+}
+
 .navButtons {
     display: none !important;
 }
 
 .JFrontierCal {
-    /*display: block;
-    float: left;*/
-    /*overflow: visible;*/
     position: absolute;
 }
 
@@ -26,12 +28,10 @@ Style shared by all day cells.
     border-bottom: 1px solid #000000 !important;
     border-left: 1px solid #000000 !important;
     page-break-inside: avoid;
-    page-break-before: avoid;
+    /*page-break-before: avoid;*/
     max-width: 12.7%;  /* Makes cells skinny enough that the Saturday cells don't get cut off on the right */
     min-height: 50px;  /* Even if there are no events, we want some height in the cell */
     /*height: 100%;*/  /* height will need to be 100% of parent after creating week object: height: 100%; */
-    /*float: none;
-    display: inline-block;*/
 }
 
 /*
@@ -51,8 +51,6 @@ Style for header cells (day name cells at top of calendar)
     border-bottom: 1px solid #000000;
     border-left: 1px solid #000000;
     max-width: 12.7%;  /* Makes cells skinny enough that the Saturday cells don't get cut off on the right */
-    /*float: none;
-    display: inline-block;*/
 }
 
 /*
@@ -72,8 +70,6 @@ Style for week Header cells (cells for day numbers above each week)
 .JFrontierCal .JFrontierCal-NextMonth-Week-Header-Cell-Last {
     border-left: 1px solid #000000;
     max-width: 12.7%;  /* Makes cells skinny enough that the Saturday cells don't get cut off on the right */
-    /*float: none;
-    display: inline-block;*/
 }
 
 /*
