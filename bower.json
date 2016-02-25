@@ -1,8 +1,8 @@
 {
   "name": "jquery-frontier-calendar",
   "description": "Full month calendar jQuery plugin that looks like Google Calendar",
-  "version": "1.4.1",
-  "main": "./js/frontierCalendar/jquery-frontier-cal-1.4.0.js",
+  "version": "1.4.2",
+  "main": "./js/frontierCalendar/jquery-frontier-cal-1.4.2.js",
   "license": "MIT",
   "ignore": [
     "**/.*",

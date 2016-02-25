@@ -4362,6 +4362,7 @@
                 calId = stripNumberSign(calId);
                 // strip any preceeding 0's
                 month = month.replace(/^[0]+/g,"");
+                if (month === "") month = '0';
                 var yearInt = parseInt(year);
                 var monthInt = parseInt(month);
                 var dateToShow = new Date(yearInt,monthInt,1,0,0,0,0);

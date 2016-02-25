@@ -1,7 +1,7 @@
 {
   "name": "jquery-frontier-calendar",
   "description": "Full month calendar jQuery plugin that looks like Google Calendar",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "homepage": "https://github.com/beardon/jquery-frontier-calendar",
   "bugs": {
     "url": "https://github.com/beardon/jquery-frontier-calendar/issues",
@@ -24,7 +24,7 @@
       "url": "https://github.com/aaronbean"
     }
   ],
-  "main": "./js/frontierCalendar/jquery-frontier-cal-1.4.0.js",
+  "main": "./js/frontierCalendar/jquery-frontier-cal-1.4.2.js",
   "keywords": [
     "calendar",
     "jquery",
